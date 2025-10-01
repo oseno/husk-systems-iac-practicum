@@ -9,7 +9,7 @@ locals {
     Project     = var.project_name
     Owner       = var.owner
     ManagedBy   = "OpenTofu"
-    Purpose     = "Testing OpenTofu setup"
+    Client      = "Husk Power Systems"
   }
 }
 

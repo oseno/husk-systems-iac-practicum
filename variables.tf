@@ -36,3 +36,15 @@ variable "test_storage_name_prefix" {
   type        = string
   default     = "sadevngcmutest"
 }
+
+variable "synapse_sql_admin_login" {
+  description = "SQL Administrator login for Synapse"
+  type        = string
+  default     = "sqladmin"
+}
+
+variable "synapse_sql_admin_password" {
+  description = "SQL Administrator password for Synapse"
+  type        = string
+  sensitive   = true
+}
