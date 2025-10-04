@@ -18,3 +18,8 @@ output "resource_group_used" {
   value       = var.resource_group_name
   description = "Resource group where resources were deployed"
 }
+
+output "resource_group_name" {
+  value       = module.resource_group.name
+  description = "The name of the resource group created"
+}
