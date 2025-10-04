@@ -1,36 +1,3 @@
-# Commented out to test resource group in isolation
-# # Local values for computed/derived values
-# locals {
-#   # Generate unique storage account name using timestamp
-#   test_storage_name = "${var.test_storage_name_prefix}${formatdate("MMDD", timestamp())}"
-
-#   # Common tags applied to all resources
-#   common_tags = {
-#     Environment = var.environment
-#     Project     = var.project_name
-#     Owner       = var.owner
-#     ManagedBy   = "OpenTofu"
-#     Purpose     = "Testing OpenTofu setup"
-#   }
-# }
-
-# # Test storage account
-# resource "azurerm_storage_account" "test" {
-#   name                     = local.test_storage_name
-#   resource_group_name      = var.resource_group_name
-#   location                 = var.location
-#   account_tier             = "Standard"
-#   account_replication_type = "LRS"
-
-#   tags = local.common_tags
-
-#   lifecycle {
-#     ignore_changes = [
-#       name # Ignore name changes since we use timestamp
-#     ]
-#   }
-# }
-
 module "resource_group" {
   source = "./modules/resource_group"
 
@@ -54,4 +21,29 @@ resource "random_string" "suffix" {
   special = false
   upper   = false
   numeric = true
+}
+
+module "synapse_workspace" {
+  source = "./modules/synapse_workspace"
+
+  name                                 = "${var.environment}-${var.project_name}-synapse"
+  resource_group_name                  = module.resource_group.name
+  location                             = module.resource_group.location
+  storage_data_lake_gen2_filesystem_id = module.storage_account.filesystem_id
+  storage_account_id                   = module.storage_account.id # for rbac
+  sql_administrator_login              = var.sql_administrator_login
+  managed_virtual_network_enabled      = var.synapse_managed_vnet_enabled
+  sql_pool_sku                         = var.synapse_sql_pool_sku
+  spark_pool_node_count                = var.synapse_spark_pool_node_count
+  spark_pool_node_size_family          = var.synapse_spark_pool_node_size_family
+  spark_pool_node_size                 = var.synapse_spark_pool_node_size
+  spark_pool_version                   = var.synapse_spark_pool_version
+  spark_pool_auto_pause_enabled        = var.synapse_spark_pool_auto_pause_enabled
+  spark_pool_auto_scale_enabled        = var.synapse_spark_pool_auto_scale_enabled
+  spark_pool_min_node_count            = var.synapse_spark_pool_min_node_count
+  spark_pool_max_node_count            = var.synapse_spark_pool_max_node_count
+  spark_pool_delay_in_minutes          = var.synapse_spark_pool_delay_in_minutes
+  firewall_rules                       = var.synapse_firewall_rules
+  tags                                 = module.resource_group.tags
+
 }
