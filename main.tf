@@ -38,3 +38,20 @@ module "resource_group" {
   location = var.location
   tags     = var.tags
 }
+
+module "storage_account" {
+  source = "./modules/storage_account"
+
+  name                = "${var.environment}-${var.project_name}-sa-${random_string.suffix.result}" # unique storage account name
+  resource_group_name = module.resource_group.name
+  location            = module.resource_group.location
+  filesystem_name     = "${var.project_name}-${var.environment}-fs"
+  tags                = module.resource_group.tags
+}
+
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+  numeric = true
+}
