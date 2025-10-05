@@ -10,5 +10,5 @@ output "location" {
 
 output "id" {
   value       = azurerm_resource_group.main.id
-  description = "The id of the resource group."
+  description = "The ID of the resource group."
 }

@@ -29,13 +29,22 @@ output "sql_administrator_login" {
 }
 
 output "sql_administrator_password" {
-  description = "The SQL administrator password for Synapse."
-  value       = random_password.sql_admin_password.result
+  description = "The SQL administrator password retrieved from Azure key vault."
+  value       = data.azurerm_key_vault_secret.sql_admin_password.id
   sensitive   = true
 }
 
 output "synapse_msi_principal_id" {
   description = "The Principal ID of the Synapse Workspace's system assigned managed identity."
   value       = azurerm_synapse_workspace.main.identity.principal_id
+}
 
+output "sql_pool_id" {
+  description = "The ID of the default Synapse SQL pool."
+  value       = azurerm_synapse_sql_pool.main.id
+}
+
+output "spark_pool_id" {
+  description = "The ID of default Synapse Spark pool."
+  value       = azurerm_synapse_spark_pool.main.id
 }

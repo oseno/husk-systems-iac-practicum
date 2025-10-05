@@ -1,8 +1,11 @@
-resource "random_password" "sql_admin_password" {
-  length  = 20
-  special = true
-  upper   = true
-  numeric = true
+data "azurerm_key_vault" "main" {
+  name                = var.key_vault_name
+  resource_group_name = var.resource_group_name # assuming the key vault are in the same RG as the other resources
+}
+
+data "azurerm_key_vault_secret" "sql_admin_password" {
+  name         = var.sql_admin_password_secret_name
+  key_vault_id = data.azurerm_key_vault.main.id
 }
 
 resource "azurerm_synapse_workspace" "main" {
@@ -11,8 +14,7 @@ resource "azurerm_synapse_workspace" "main" {
   location                             = var.location
   storage_data_lake_gen2_filesystem_id = var.storage_data_lake_gen2_filesystem_id
   sql_administrator_login              = var.sql_administrator_login
-  sql_administrator_login_password     = random_password.sql_admin_password.result # using generated password
-  # password can be accessed through tofu output or key vault
+  sql_administrator_login_password     = data.azurerm_key_vault_secret.sql_admin_password.value # use kv password
 
   # Basic identity configuration
   identity {
@@ -29,7 +31,7 @@ resource "azurerm_synapse_workspace" "main" {
 resource "azurerm_synapse_sql_pool" "main" {
   name                 = "${var.name}-sqlpool"
   synapse_workspace_id = azurerm_synapse_workspace.main.id
-  sku_name              = var.sql_pool_sku
+  sku_name             = var.sql_pool_sku
   collation            = "SQL_Latin1_General_CP1_CI_AS"
   data_encrypted       = true
   storage_account_type = "LRS"

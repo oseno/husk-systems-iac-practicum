@@ -113,3 +113,13 @@ variable "storage_account_id" {
   description = "The ID of the Storage Account associated with the Synapse (for RBAC scope)."
   type        = string
 }
+
+variable "key_vault_name" {
+  description = "The name of the Azure key vault containing the secrets."
+  type        = string
+}
+
+variable "sql_admin_password_secret_name" {
+  description = "The name of the secret in the key vault that stores the SQL admin password."
+  type        = string
+}

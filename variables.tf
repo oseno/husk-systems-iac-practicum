@@ -132,3 +132,14 @@ variable "synapse_firewall_rules" {
   }
 }
 
+variable "key_vault_name" {
+  description = "The name of the Azure key vault containing the Synapse credentials."
+  type        = string
+}
+
+variable "synapse_sql_admin_password_secret_name" {
+  description = "The name of the secret in Key vault that stores the SQL admin password."
+  type        = string
+  default     = "synapse-sql-admin-password"
+}
+

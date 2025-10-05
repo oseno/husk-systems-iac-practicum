@@ -45,5 +45,6 @@ module "synapse_workspace" {
   spark_pool_delay_in_minutes          = var.synapse_spark_pool_delay_in_minutes
   firewall_rules                       = var.synapse_firewall_rules
   tags                                 = module.resource_group.tags
-
+  sql_admin_password_secret_name       = var.synapse_sql_admin_password_secret_name
+  key_vault_name                       = var.key_vault_name
 }
