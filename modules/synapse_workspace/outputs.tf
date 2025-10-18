@@ -36,7 +36,7 @@ output "sql_administrator_password" {
 
 output "synapse_msi_principal_id" {
   description = "The Principal ID of the Synapse Workspace's system assigned managed identity."
-  value       = azurerm_synapse_workspace.main.identity.principal_id
+  value       = azurerm_synapse_workspace.main.identity[0].principal_id
 }
 
 output "sql_pool_id" {

@@ -23,3 +23,8 @@ output "filesystem_url" {
   value       = azurerm_storage_container.filesystem.resource_manager_id
   description = "The resource manager ID of the data lake gen2 filesystem."
 }
+
+output "filesystem_synapse_url" {
+  value       = "https://${azurerm_storage_account.main.name}.dfs.core.windows.net/${azurerm_storage_container.filesystem.name}"
+  description = "The URL of the data lake gen2 filesystem (container) in Synapse preferred format."
+}

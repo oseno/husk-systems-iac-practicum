@@ -29,13 +29,14 @@ resource "azurerm_synapse_workspace" "main" {
 
 # SQL pool configuration
 resource "azurerm_synapse_sql_pool" "main" {
-  name                 = "${var.name}-sqlpool"
-  synapse_workspace_id = azurerm_synapse_workspace.main.id
-  sku_name             = var.sql_pool_sku
-  collation            = "SQL_Latin1_General_CP1_CI_AS"
-  data_encrypted       = true
-  storage_account_type = "LRS"
-  create_mode          = "Default"
+  name                      = "${replace(var.name, "-", "_")}_sqlpool" # limit is 60 chars
+  synapse_workspace_id      = azurerm_synapse_workspace.main.id
+  sku_name                  = var.sql_pool_sku
+  collation                 = "SQL_Latin1_General_CP1_CI_AS"
+  data_encrypted            = true
+  storage_account_type      = "LRS"
+  geo_backup_policy_enabled = false # LRS is set so this is false
+  create_mode               = "Default"
 
 
   lifecycle {
@@ -47,11 +48,11 @@ resource "azurerm_synapse_sql_pool" "main" {
 
 # Spark pool configuration
 resource "azurerm_synapse_spark_pool" "main" {
-  name                 = "${var.name}-sparkpool"
+  name                 = "${substr(var.name, 0, 2)}sparkpool" # limit is 15 chars
   synapse_workspace_id = azurerm_synapse_workspace.main.id
   node_count           = var.spark_pool_node_count
   node_size_family     = var.spark_pool_node_size_family
-  node_size            = var.spark_pool_node_size_family
+  node_size            = var.spark_pool_node_size
   spark_version        = var.spark_pool_version
 
   # set auto pause if enabled
