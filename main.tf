@@ -45,3 +45,24 @@ module "synapse_workspace" {
   sql_admin_password_secret_name       = var.synapse_sql_admin_password_secret_name
   key_vault_name                       = var.key_vault_name
 }
+
+# # Stream Analytics Module to be used once permissions are made available
+# module "stream_analytics" {
+#   source = "./modules/stream_analytics"
+
+#   name                = "${var.environment}-${var.project_name}-stream"
+#   resource_group_name = data.azurerm_resource_group.main.name
+#   location            = var.location
+#   streaming_units     = 3
+  
+#   transformation_query = <<QUERY
+#     SELECT
+#         *
+#     INTO
+#         [output]
+#     FROM
+#         [input]
+#   QUERY
+
+#   tags = var.tags
+# }
