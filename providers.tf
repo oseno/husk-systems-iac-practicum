@@ -5,3 +5,7 @@ provider "azurerm" {
   # tells open how to authenticate 
   # (defaults to using credentials from 'az login')
 }
+
+provider "databricks" {
+  host = azurerm_databricks_workspace.main.workspace_url
+}

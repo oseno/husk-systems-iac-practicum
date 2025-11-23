@@ -45,3 +45,24 @@ module "synapse_workspace" {
   sql_admin_password_secret_name       = var.synapse_sql_admin_password_secret_name
   key_vault_name                       = var.key_vault_name
 }
+
+module "databricks_workspace" {
+  source = "./modules/databricks_workspace"
+
+  name                             = "${var.environment}-${var.project_name}-databricks"
+  resource_group_name              = var.resource_group_name
+  location                         = var.location
+  environment                      = var.environment
+  allowed_node_types               = var.databricks_cluster_policy_allowed_node_types
+  key_vault_secret_scope_name      = var.databricks_key_vault_secret_scope_name
+  key_vault_name                   = var.key_vault_name
+  sku_name                         = var.databricks_sku_name
+  autoscale_max_max_workers_value  = var.databricks_autoscale_max_max_workers_value
+  autoscale_max_min_workers_value  = var.databricks_autoscale_max_min_workers_value
+  autoscale_min_workers_value      = var.databricks_autoscale_min_workers_value
+  autotermination_minutes_maxValue = var.databricks_autotermination_minutes_maxValue
+  autotermination_minutes_minValue = var.databricks_autotermination_minutes_minValue
+  autoscale_policy_enabled_name    = var.databricks_autoscale_policy_enabled_name
+  autoscale_policy_enabled_value   = var.databricks_autoscale_policy_enabled_value
+  tags                             = var.tags
+}

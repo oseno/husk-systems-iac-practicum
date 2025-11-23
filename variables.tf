@@ -143,3 +143,69 @@ variable "synapse_sql_admin_password_secret_name" {
   default     = "synapse-sql-admin-password"
 }
 
+variable "databricks_cluster_policy_allowed_node_types" {
+  description = "Allowed VM SKUs for databricks clusters."
+  type        = list(string)
+  default = [
+    "Standard_D4ds_v4",
+    "Standard_D8ds_v4",
+    "Standard_E4ds_v4"
+  ]
+}
+
+variable "databricks_key_vault_secret_scope_name" {
+  description = "The name of the secret scope in Databricks."
+  type        = string
+}
+
+
+variable "databricks_autoscale_policy_enabled_name" {
+  description = "The name of the autoscale policy in Databricks."
+  type        = string
+}
+
+variable "databricks_sku_name" {
+  description = "The SKUs for the Databricks workspace such as 'Premium '."
+  type        = string
+  default     = "Premium" # for governance features (Audit logs, RBAC)
+}
+
+variable "databricks_autoscale_policy_enabled_value" {
+  description = "Specifies whether auto-scaling is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "databricks_autoscale_min_workers_value" {
+  description = "The minimum number of workers for the Databricks clusters if auto-scaling is enabled."
+  type        = number
+  default     = 1
+}
+
+variable "databricks_autoscale_max_min_workers_value" {
+  # Assumes that autoscale for maximum workers is of type "range".
+  description = "The minimum number of maximum workers for the Databricks clusters if auto-scaling is enabled."
+  type        = number
+  default     = 2
+}
+
+variable "databricks_autoscale_max_max_workers_value" {
+  # Assumes that autoscale for maximum workers is of type "range".
+  description = "The maximum number of maximum workers for the Databricks clusters if auto-scaling is enabled."
+  type        = number
+  default     = 15
+}
+
+variable "databricks_autotermination_minutes_maxValue" {
+  # Assumes that autotermination minutes is of type "range".
+  description = "The maximum number minutes before idle workers are terminated."
+  type        = number
+  default     = 60
+}
+
+variable "databricks_autotermination_minutes_minValue" {
+  # Assumes that autotermination minutes is of type "range".
+  description = "The minimum number minutes before idle workers are terminated."
+  type        = number
+  default     = 10
+}
