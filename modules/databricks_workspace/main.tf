@@ -27,7 +27,6 @@ resource "azurerm_databricks_workspace" "main" {
 
 resource "databricks_cluster" "job_cluster" {
   cluster_name            = "job-cluster-${var.environment}"
-  workspace_id            = azurerm_databricks_workspace.main.workspace_id
   spark_version           = var.spark_version
   node_type_id            = "Standard_D4ds_v4"
   autotermination_minutes = 30
@@ -37,7 +36,7 @@ resource "databricks_cluster" "job_cluster" {
     max_workers = var.autoscale_max_max_workers_value
   }
 
-  cluster_policy_id = databricks_cluster_policy.optimized_autoscaling.id
+  policy_id = databricks_cluster_policy.optimized_autoscaling.id
 
   library {
     pypi {
@@ -105,16 +104,15 @@ resource "databricks_cluster_policy_attachment" "engineers_policy_attach" {
   group_id          = databricks_group.data_engineers.id
 }
 
-resource "databricks_permission_assignment" "data_engineers_access" {
-  principal = databricks_group.data_engineers.id
+resource "databricks_permissions" "data_engineers_access" {
 
-  permissions = [
-    "CAN_ATTACH_TO",
-    "CAN_RESTART"
-  ]
+  access_control {
+    group_name       = databricks_group.data_engineers.display_name
+    permission_level = "CAN_USE"
+  }
 
-  object_type = "clusters"
-  object_id   = databricks_cluster_policy.optimized_autoscaling.id
+  cluster_policy_id = databricks_cluster_policy.optimized_autoscaling.id
+
 }
 
 

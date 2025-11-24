@@ -209,3 +209,31 @@ variable "databricks_autotermination_minutes_minValue" {
   type        = number
   default     = 10
 }
+
+variable "databricks_spark_version" {
+  type = number
+}
+
+variable "prefix" {
+  type = string
+}
+
+variable "alerts_email_address" {
+  type = string
+}
+
+variable "resource_group_id" {
+  type = string
+}
+
+variable "budget_monthly_amount" {
+  type = number
+}
+
+variable "budget_cost_alert_emails" {
+  type = list(string)
+}
+
+variable "alerts_cost_spike_threshold" {
+  type = number
+}
