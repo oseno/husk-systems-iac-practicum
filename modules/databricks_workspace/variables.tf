@@ -98,5 +98,5 @@ variable "environment" {
 }
 
 variable "spark_version" {
-  type = number
+  type = string
 }

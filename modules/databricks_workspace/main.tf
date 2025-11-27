@@ -7,7 +7,7 @@ resource "azurerm_key_vault_access_policy" "databricks_access" {
   key_vault_id = data.azurerm_key_vault.key_vault.id
 
   tenant_id = data.azurerm_key_vault.key_vault.tenant_id
-  object_id = azurerm_databricks_workspace.main.storage_account_identity[0].object_id
+  object_id = azurerm_databricks_workspace.main.storage_account_identity[0].principal_id
 
   secret_permissions = [
     "Get",
@@ -99,12 +99,8 @@ resource "databricks_group" "data_engineers" {
   display_name = "Data Engineers - ${var.environment}"
 }
 
-resource "databricks_cluster_policy_attachment" "engineers_policy_attach" {
-  cluster_policy_id = databricks_cluster_policy.optimized_autoscaling.id
-  group_id          = databricks_group.data_engineers.id
-}
-
 resource "databricks_permissions" "data_engineers_access" {
+  object_type = "cluster_policy"
 
   access_control {
     group_name       = databricks_group.data_engineers.display_name

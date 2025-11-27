@@ -12,8 +12,8 @@ resource "azurerm_monitor_metric_alert" "cpu_high" {
     threshold        = var.cpu_threshold_percent
   }
 
-  window_size = "5m"
-  frequency   = "1m"
+  window_size = "PT5M"
+  frequency   = "PT1M"
   severity    = 2
   enabled     = true
 
@@ -37,8 +37,8 @@ resource "azurerm_monitor_metric_alert" "cost_spike" {
     threshold        = var.cost_spike_threshold
   }
 
-  window_size = "1h"
-  frequency   = "15m"
+  window_size = "PT1H"
+  frequency   = "PT15M"
   severity    = 1
 
   action {

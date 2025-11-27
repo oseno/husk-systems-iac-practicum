@@ -1,4 +1,4 @@
-resource "azurerm_dashboard" "team" {
+resource "azurerm_portal_dashboard" "team" {
   name                = "${var.prefix}-dashboard-${var.environment}"
   resource_group_name = var.resource_group_name
   location            = var.location

@@ -153,10 +153,6 @@ variable "databricks_cluster_policy_allowed_node_types" {
   ]
 }
 
-variable "databricks_key_vault_secret_scope_name" {
-  description = "The name of the secret scope in Databricks."
-  type        = string
-}
 
 
 variable "databricks_autoscale_policy_enabled_name" {
@@ -211,7 +207,7 @@ variable "databricks_autotermination_minutes_minValue" {
 }
 
 variable "databricks_spark_version" {
-  type = number
+  type = string
 }
 
 variable "prefix" {
@@ -219,10 +215,6 @@ variable "prefix" {
 }
 
 variable "alerts_email_address" {
-  type = string
-}
-
-variable "resource_group_id" {
   type = string
 }
 

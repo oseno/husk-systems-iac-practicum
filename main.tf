@@ -55,7 +55,7 @@ module "databricks_workspace" {
   location                         = var.location
   environment                      = var.environment
   allowed_node_types               = var.databricks_cluster_policy_allowed_node_types
-  key_vault_secret_scope_name      = var.databricks_key_vault_secret_scope_name
+  key_vault_secret_scope_name      = "${var.environment}-${var.project_name}-kv-scope"
   key_vault_name                   = var.key_vault_name
   sku_name                         = var.databricks_sku_name
   autoscale_max_max_workers_value  = var.databricks_autoscale_max_max_workers_value
@@ -146,7 +146,7 @@ module "budget" {
 
   prefix            = var.prefix
   environment       = var.environment
-  resource_group_id = var.resource_group_id
+  resource_group_id = data.azurerm_resource_group.main.id
   amount            = var.budget_monthly_amount
   start_date        = "2025-01-01T00:00:00Z"
   end_date          = "2025-11-11T00:00:00Z"
@@ -164,6 +164,6 @@ module "dashboard" {
   function_app_id            = module.storage_account.id # REPLACE WITH FUNCTION APP ID
   log_analytics_workspace_id = module.log_analytics.workspace_id
   budget_amount              = var.budget_monthly_amount
-  current_spend              = data.azurerm_consumption_usage.this.amount
+  current_spend              = 0
   tags                       = var.tags
 }
