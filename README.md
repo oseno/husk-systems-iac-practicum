@@ -290,6 +290,44 @@ FROM
 
 ---
 
+### Storage Account Module with Lifecycle Policies (`modules/storage_account`)
+
+**Purpose:** Provides Azure Storage Account (Data Lake Gen2) with automatic data tiering for cost optimization
+
+**Resources:**
+- Storage Account (StorageV2, LRS redundancy)
+- Storage Container (filesystem)
+- Lifecycle Management Policies for automatic tiering
+
+**Lifecycle Policy Rules:**
+1. **Tier to Cool** - Move data to Cool tier after 30 days of inactivity
+2. **Tier to Archive** - Move data to Archive tier after 90 days of inactivity
+3. **Delete Old Data** - Automatically delete data after 365 days
+4. **Clean Snapshots** - Remove snapshots after 30 days
+
+**Cost Savings:**
+- Hot tier: $0.018/GB/month
+- Cool tier: $0.010/GB/month (44% savings)
+- Archive tier: $0.002/GB/month (89% savings)
+
+**Usage:**
+```hcl
+module "storage_account" {
+  source = "./modules/storage_account"
+
+  name                = "mystorageaccount"
+  resource_group_name = "my-resource-group"
+  location            = "southindia"
+  filesystem_name     = "myfilesystem"
+  
+  tags = {
+    Environment = "dev"
+  }
+}
+```
+
+**Note:** Lifecycle policies are automatically applied to all storage accounts created with this module.
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
