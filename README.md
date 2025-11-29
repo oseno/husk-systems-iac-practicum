@@ -328,6 +328,151 @@ module "storage_account" {
 
 **Note:** Lifecycle policies are automatically applied to all storage accounts created with this module.
 
+### App Service Module (`modules/app_service`)
+
+**Purpose:** Provides managed web application hosting with autoscaling and network integration
+
+**Resources:**
+- App Service Plan (compute resources)
+- App Service (Linux or Windows)
+- Autoscaling rules based on CPU and Memory
+- Optional VNet integration
+
+**Key Features:**
+- ✅ Support for Linux and Windows hosting
+- ✅ Multiple runtime stacks (Python, Node.js, .NET)
+- ✅ Automatic scaling based on resource utilization
+- ✅ HTTPS-only with TLS 1.2 minimum
+- ✅ System-assigned managed identity
+- ✅ Always-on capability for production workloads
+
+**Autoscaling Rules:**
+- Scale out when CPU > 70%
+- Scale in when CPU < 30%
+- Scale out when Memory > 75%
+- Min instances: 1, Max instances: 5 (configurable)
+
+**Supported Runtime Stacks:**
+- Python: 3.11, 3.10, 3.9
+- Node.js: 18 LTS, 16 LTS
+- .NET: 6.0, 7.0
+- Java: 11, 17
+
+**Usage:**
+```hcl
+module "app_service" {
+  source = "./modules/app_service"
+
+  app_service_plan_name = "my-app-plan"
+  app_service_name      = "my-web-app"
+  resource_group_name   = "rg-prod-in-cmu"
+  location              = "southindia"
+  
+  os_type       = "Linux"
+  sku_name      = "B1"  # Basic tier
+  runtime_stack = "PYTHON|3.11"
+  
+  enable_autoscale         = true
+  autoscale_min_instances  = 1
+  autoscale_max_instances  = 5
+  
+  app_settings = {
+    "ENVIRONMENT" = "production"
+    "LOG_LEVEL"   = "info"
+  }
+  
+  tags = {
+    Environment = "dev"
+    Project     = "infracore"
+  }
+}
+```
+
+**SKU Options:**
+- **B1/B2/B3:** Basic tier (good for dev/test)
+- **S1/S2/S3:** Standard tier (production workloads)
+- **P1v2/P2v2/P3v2:** Premium tier (high performance)
+
+---
+
+### Function App Module (`modules/function_app`)
+
+**Purpose:** Provides serverless compute for event-driven applications with autoscaling
+
+**Resources:**
+- Storage Account (required for Function App)
+- App Service Plan (Consumption or Premium)
+- Function App (Linux or Windows)
+- Autoscaling rules based on CPU and HTTP queue length
+- Optional VNet integration
+
+**Key Features:**
+- ✅ Serverless or dedicated hosting plans
+- ✅ Multiple runtime support (Python, Node.js, .NET, Java, PowerShell)
+- ✅ Event-driven scaling
+- ✅ Integration with Application Insights
+- ✅ System-assigned managed identity
+- ✅ HTTPS-only with TLS 1.2 minimum
+
+**Autoscaling Rules:**
+- Scale out when CPU > 70%
+- Scale in when CPU < 30%
+- Scale out when HTTP Queue Length > 100
+- Min instances: 1, Max instances: 10 (configurable)
+
+**Hosting Plans:**
+- **Y1 (Consumption):** Pay-per-execution, automatic scaling
+- **EP1/EP2/EP3 (Elastic Premium):** Pre-warmed workers, VNet integration
+- **Basic/Standard/Premium:** Dedicated resources
+
+**Supported Runtimes:**
+- Python: 3.11, 3.10, 3.9
+- Node.js: 18, 16, 14
+- .NET: 6.0, 7.0
+- Java: 11, 17
+- PowerShell: 7.2
+
+**Usage:**
+```hcl
+module "function_app" {
+  source = "./modules/function_app"
+
+  function_app_name      = "my-function-app"
+  function_app_plan_name = "my-function-plan"
+  storage_account_name   = "myfuncsa12345"
+  resource_group_name    = "rg-prod-in-cmu"
+  location               = "southindia"
+  
+  os_type         = "Linux"
+  sku_name        = "Y1"  # Consumption plan
+  runtime         = "python"
+  runtime_version = "3.11"
+  
+  enable_autoscale = false  # Not needed for Consumption plan
+  
+  app_settings = {
+    "AzureWebJobsFeatureFlags" = "EnableWorkerIndexing"
+  }
+  
+  tags = {
+    Environment = "dev"
+    Project     = "infracore"
+  }
+}
+```
+
+**Common Use Cases:**
+- Real-time data processing
+- Scheduled tasks (cron jobs)
+- Event-driven workflows
+- API backends
+- IoT data ingestion
+
+**Cost Optimization:**
+- Use Consumption plan (Y1) for sporadic workloads
+- Use Premium plan (EP1+) for predictable, continuous workloads
+- Configure appropriate autoscaling thresholds
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
