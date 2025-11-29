@@ -1,14 +1,14 @@
 variable "location" {
   description = "Azure region where resources will be created"
   type        = string
-  default     = "jioindiawest" # India Pacific since they are located in India
+  default     = "southindia"
 }
 
 # Resource Group
 variable "resource_group_name" {
   description = "Name of the existing resource group to deploy resources into"
   type        = string
-  default     = "rg-prod-ng-cmu" # cannot hardcode this since you only use it while creating
+  default     = "rg-prod-in-cmu" # cannot hardcode this since you only use it while creating
   # a test storage account. What if the resource group does not exist?
 }
 
@@ -143,3 +143,20 @@ variable "synapse_sql_admin_password_secret_name" {
   default     = "synapse-sql-admin-password"
 }
 
+# Security Module Variables
+variable "subscription_id" {
+  description = "Azure subscription ID"
+  type        = string
+}
+
+variable "rbac_readers" {
+  description = "List of principal IDs to assign Reader role"
+  type        = list(string)
+  default     = []
+}
+
+variable "rbac_contributors" {
+  description = "List of principal IDs to assign Contributor role"
+  type        = list(string)
+  default     = []
+}

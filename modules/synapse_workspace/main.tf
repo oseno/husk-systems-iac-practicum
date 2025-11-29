@@ -50,7 +50,7 @@ resource "azurerm_synapse_sql_pool" "main" {
 resource "azurerm_synapse_spark_pool" "main" {
   name                 = "${substr(var.name, 0, 2)}sparkpool" # limit is 15 chars
   synapse_workspace_id = azurerm_synapse_workspace.main.id
-  node_count           = var.spark_pool_node_count
+  node_count = var.spark_pool_auto_scale_enabled ? null : var.spark_pool_node_count
   node_size_family     = var.spark_pool_node_size_family
   node_size            = var.spark_pool_node_size
   spark_version        = var.spark_pool_version
