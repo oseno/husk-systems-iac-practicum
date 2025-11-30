@@ -32,17 +32,17 @@ resource "azurerm_linux_function_app" "main" {
   storage_account_access_key = azurerm_storage_account.function.primary_access_key
 
   site_config {
-    always_on                              = var.always_on
     application_insights_connection_string = var.application_insights_connection_string
     application_insights_key               = var.application_insights_key
 
     application_stack {
-      python_version = var.runtime_version
+      python_version = var.runtime == "python" ? var.runtime_version : null
+      node_version   = var.runtime == "node" ? var.runtime_version : null
+      dotnet_version = var.runtime == "dotnet" ? var.runtime_version : null
+      java_version   = var.runtime == "java" ? var.runtime_version : null
     }
 
-    # Enable HTTPS only
     minimum_tls_version = "1.2"
-    ftps_state          = "FtpsOnly"
   }
 
   app_settings = merge(
@@ -73,16 +73,17 @@ resource "azurerm_windows_function_app" "main" {
   storage_account_access_key = azurerm_storage_account.function.primary_access_key
 
   site_config {
-    always_on                              = var.always_on
     application_insights_connection_string = var.application_insights_connection_string
     application_insights_key               = var.application_insights_key
 
     application_stack {
-      dotnet_version = var.runtime_version
+      dotnet_version              = var.runtime == "dotnet" ? var.runtime_version : null
+      node_version                = var.runtime == "node" ? var.runtime_version : null
+      java_version                = var.runtime == "java" ? var.runtime_version : null
+      powershell_core_version     = var.runtime == "powershell" ? var.runtime_version : null
     }
 
     minimum_tls_version = "1.2"
-    ftps_state          = "FtpsOnly"
   }
 
   app_settings = merge(
@@ -101,9 +102,9 @@ resource "azurerm_windows_function_app" "main" {
   tags = var.tags
 }
 
-# Autoscaling settings
+# Autoscaling settings (only for non-Consumption plans)
 resource "azurerm_monitor_autoscale_setting" "function" {
-  count               = var.enable_autoscale ? 1 : 0
+  count               = var.enable_autoscale && var.sku_name != "Y1" ? 1 : 0
   name                = "autoscale-${var.function_app_plan_name}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -154,27 +155,6 @@ resource "azurerm_monitor_autoscale_setting" "function" {
 
       scale_action {
         direction = "Decrease"
-        type      = "ChangeCount"
-        value     = "1"
-        cooldown  = "PT5M"
-      }
-    }
-
-    # Scale out rule - add instances when HTTP Queue Length > 100
-    rule {
-      metric_trigger {
-        metric_name        = "HttpQueueLength"
-        metric_resource_id = azurerm_service_plan.function.id
-        time_grain         = "PT1M"
-        statistic          = "Average"
-        time_window        = "PT5M"
-        time_aggregation   = "Average"
-        operator           = "GreaterThan"
-        threshold          = 100
-      }
-
-      scale_action {
-        direction = "Increase"
         type      = "ChangeCount"
         value     = "1"
         cooldown  = "PT5M"

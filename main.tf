@@ -78,3 +78,27 @@ module "stream_analytics" {
 
   tags = var.tags
 }
+
+# Test App Service Module (Free tier for testing)
+module "test_app_service" {
+  source = "./modules/app_service"
+
+  app_service_plan_name = "test-app-plan-cmu"
+  app_service_name      = "test-webapp-cmu-${random_id.app_suffix.hex}"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = var.location
+  
+  os_type       = "Linux"
+  sku_name      = "F1"  # FREE TIER
+  runtime_version = "3.11"  # NEW
+  
+  enable_autoscale = false  # Not available on Free tier
+  always_on        = false  # Not available on Free tier
+  
+  tags = var.tags
+}
+
+# Random ID for unique app service name
+resource "random_id" "app_suffix" {
+  byte_length = 4
+}

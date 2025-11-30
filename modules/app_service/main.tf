@@ -9,21 +9,23 @@ resource "azurerm_service_plan" "main" {
   tags = var.tags
 }
 
-# App Service - the web application
-resource "azurerm_linux_app_service" "main" {
+# Linux Web App
+resource "azurerm_linux_web_app" "main" {
   count               = var.os_type == "Linux" ? 1 : 0
   name                = var.app_service_name
   location            = var.location
   resource_group_name = var.resource_group_name
-  app_service_plan_id = azurerm_service_plan.main.id
+  service_plan_id     = azurerm_service_plan.main.id
 
   site_config {
-    always_on        = var.always_on
-    linux_fx_version = var.runtime_stack
+    always_on = var.always_on
     
-    # Enable HTTPS only
-    min_tls_version = "1.2"
-    ftps_state      = "FtpsOnly"
+    application_stack {
+      python_version = var.runtime_version
+    }
+    
+    minimum_tls_version = "1.2"
+    ftps_state          = "FtpsOnly"
   }
 
   app_settings = var.app_settings
@@ -37,19 +39,23 @@ resource "azurerm_linux_app_service" "main" {
   tags = var.tags
 }
 
-resource "azurerm_windows_app_service" "main" {
+# Windows Web App
+resource "azurerm_windows_web_app" "main" {
   count               = var.os_type == "Windows" ? 1 : 0
   name                = var.app_service_name
   location            = var.location
   resource_group_name = var.resource_group_name
-  app_service_plan_id = azurerm_service_plan.main.id
+  service_plan_id     = azurerm_service_plan.main.id
 
   site_config {
-    always_on       = var.always_on
-    dotnet_framework_version = var.runtime_stack
+    always_on = var.always_on
     
-    min_tls_version = "1.2"
-    ftps_state      = "FtpsOnly"
+    application_stack {
+      dotnet_version = var.runtime_version
+    }
+    
+    minimum_tls_version = "1.2"
+    ftps_state          = "FtpsOnly"
   }
 
   app_settings = var.app_settings
@@ -150,6 +156,6 @@ resource "azurerm_monitor_autoscale_setting" "main" {
 # VNet Integration (optional)
 resource "azurerm_app_service_virtual_network_swift_connection" "main" {
   count          = var.enable_vnet_integration && var.os_type == "Linux" ? 1 : 0
-  app_service_id = azurerm_linux_app_service.main[0].id
+  app_service_id = azurerm_linux_web_app.main[0].id
   subnet_id      = var.subnet_id
 }

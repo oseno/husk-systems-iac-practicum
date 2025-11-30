@@ -35,10 +35,10 @@ variable "sku_name" {
   default     = "B1"
 }
 
-variable "runtime_stack" {
-  description = "Runtime stack (e.g., 'PYTHON|3.11', 'NODE|18-lts', 'DOTNET|6.0')"
+variable "runtime_version" {
+  description = "Runtime version (e.g., '3.11' for Python, '6.0' for .NET)"
   type        = string
-  default     = "PYTHON|3.11"
+  default     = "3.11"
 }
 
 variable "always_on" {
