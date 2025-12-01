@@ -246,3 +246,174 @@ variable "budget_cost_alert_emails" {
 variable "alerts_cost_spike_threshold" {
   type = number
 }
+
+# ==========================================
+# SQL SERVER VARIABLES
+# Add these to the END of your variables.tf file
+# ==========================================
+
+variable "sql_server_name" {
+  description = "Name of the SQL Server (must be globally unique)"
+  type        = string
+}
+
+variable "sql_admin_login" {
+  description = "SQL Server administrator login"
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "SQL Server administrator password"
+  type        = string
+  sensitive   = true
+}
+
+# Database SKUs
+variable "sql_db_telemetry_sku" {
+  description = "SKU for telemetry database"
+  type        = string
+  default     = "Basic"
+}
+
+variable "sql_db_customer_sku" {
+  description = "SKU for customer database"
+  type        = string
+  default     = "Basic"
+}
+
+variable "sql_db_analytics_sku" {
+  description = "SKU for analytics database"
+  type        = string
+  default     = "Basic"
+}
+
+# Database Sizes
+variable "sql_db_telemetry_max_size_gb" {
+  description = "Max size in GB for telemetry database"
+  type        = number
+  default     = 2
+}
+
+variable "sql_db_customer_max_size_gb" {
+  description = "Max size in GB for customer database"
+  type        = number
+  default     = 2
+}
+
+variable "sql_db_analytics_max_size_gb" {
+  description = "Max size in GB for analytics database"
+  type        = number
+  default     = 2
+}
+
+# Backup Configuration
+variable "sql_backup_retention_days" {
+  description = "Number of days to retain backups"
+  type        = number
+  default     = 7
+}
+
+variable "sql_backup_interval_hours" {
+  description = "Backup interval in hours"
+  type        = number
+  default     = 12
+}
+
+# Long-term Retention
+variable "sql_ltr_weekly_retention" {
+  description = "Weekly backup retention (e.g., P4W for 4 weeks)"
+  type        = string
+  default     = "P1W"
+}
+
+variable "sql_ltr_monthly_retention" {
+  description = "Monthly backup retention (e.g., P12M for 12 months)"
+  type        = string
+  default     = "P1M"
+}
+
+variable "sql_ltr_yearly_retention" {
+  description = "Yearly backup retention (e.g., P5Y for 5 years)"
+  type        = string
+  default     = "P1Y"
+}
+
+# Geo-backup and Redundancy
+variable "sql_geo_backup_enabled" {
+  description = "Enable geo-backup"
+  type        = bool
+  default     = false
+}
+
+variable "sql_zone_redundant" {
+  description = "Enable zone redundancy"
+  type        = bool
+  default     = false
+}
+
+# Firewall Rules
+variable "sql_firewall_rules" {
+  description = "Map of firewall rules for SQL Server"
+  type = map(object({
+    start_ip = string
+    end_ip   = string
+  }))
+  default = {}
+}
+
+# Auditing
+variable "sql_enable_auditing" {
+  description = "Enable SQL Server auditing"
+  type        = bool
+  default     = false
+}
+
+variable "sql_audit_storage_name" {
+  description = "Storage account name for audit logs (must be globally unique)"
+  type        = string
+  default     = ""
+}
+
+variable "sql_audit_retention_days" {
+  description = "Audit log retention days"
+  type        = number
+  default     = 90
+}
+
+# Threat Detection
+variable "sql_enable_threat_detection" {
+  description = "Enable threat detection"
+  type        = bool
+  default     = false
+}
+
+variable "sql_threat_detection_emails" {
+  description = "Email addresses for threat alerts"
+  type        = list(string)
+  default     = []
+}
+
+# Failover Configuration
+variable "sql_enable_failover" {
+  description = "Enable failover group"
+  type        = bool
+  default     = false
+}
+
+variable "sql_failover_location" {
+  description = "Secondary region for failover"
+  type        = string
+  default     = "eastus"
+}
+
+variable "sql_failover_mode" {
+  description = "Failover mode (Automatic or Manual)"
+  type        = string
+  default     = "Automatic"
+}
+
+variable "sql_failover_grace_minutes" {
+  description = "Grace period for automatic failover"
+  type        = number
+  default     = 60
+}
