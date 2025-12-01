@@ -1,9 +1,9 @@
 # Husk Power Systems - Infrastructure as Code (IaC) Practicum
 
-**Author:** Joel Maison  
+**Author:** Joel Maison, Oseno Ewaose-Joseph, Mark Iraguha  
 **Institution:** Carnegie Mellon University Africa  
 **Program:** MSIT  
-**Duration:** October 2024 - January 2025  
+**Duration:** September 2025 - December 2025
 **Supervisor:** Husk Power Systems Technical Team
 
 ---
