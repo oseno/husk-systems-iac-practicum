@@ -145,40 +145,15 @@ jobs:
     if: always()
     
     steps:
-      - name: Create PR Summary
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const sqlStatus = '${{ needs.test-sql-module.result }}' === 'success' ? 'PASS' : 'FAIL';
-            const databricksStatus = '${{ needs.test-databricks-module.result }}' === 'success' ? 'PASS' : 'FAIL';
-            const streamStatus = '${{ needs.test-stream-analytics-module.result }}' === 'success' ? 'PASS' : 'FAIL';
-            const securityStatus = '${{ needs.test-security-module.result }}' === 'success' ? 'PASS' : 'FAIL';
-            const checksStatus = '${{ needs.quick-checks.result }}' === 'success' ? 'PASS' : 'FAIL';
-            const scanStatus = '${{ needs.security-check.result }}' === 'success' ? 'PASS' : 'FAIL';
-            
-            const allPass = sqlStatus === 'PASS' && databricksStatus === 'PASS' && 
-                           streamStatus === 'PASS' && securityStatus === 'PASS';
-            
-            const summary = `## Pull Request Validation Summary
-            
-            ### Module Tests
-            - [${sqlStatus}] SQL Server Module
-            - [${databricksStatus}] Databricks Module
-            - [${streamStatus}] Stream Analytics Module
-            - [${securityStatus}] Security Module
-            
-            ### Additional Checks
-            - [${checksStatus}] Format & Validation
-            - [${scanStatus}] Security Scan (warnings ignored)
-            
-            ---
-            
-            ${allPass ? '**All checks passed! Safe to merge.**' : '**Some checks failed. Please review before merging.**'}
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
+      - name: Print PR Summary
+        run: |
+          echo "==================================="
+          echo "Pull Request Validation Summary"
+          echo "==================================="
+          echo "SQL Server Module: ${{ needs.test-sql-module.result }}"
+          echo "Databricks Module: ${{ needs.test-databricks-module.result }}"
+          echo "Stream Analytics Module: ${{ needs.test-stream-analytics-module.result }}"
+          echo "Security Module: ${{ needs.test-security-module.result }}"
+          echo "Format & Validation: ${{ needs.quick-checks.result }}"
+          echo "Security Scan: ${{ needs.security-check.result }}"
+          echo "==================================="

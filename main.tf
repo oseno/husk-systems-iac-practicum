@@ -2,51 +2,60 @@ data "azurerm_resource_group" "main" {
   name = var.resource_group_name
 }
 
-# module "storage_account" {
-#   source = "./modules/storage_account"
 data "azurerm_subscription" "current" {}
 
-#   name                = "${var.environment}${var.project_name}sa${random_string.suffix.result}"
-#   resource_group_name = data.azurerm_resource_group.main.name
-#   location            = var.location
-#   filesystem_name     = "${var.project_name}-${var.environment}-fs"
-#   tags                = var.tags
-# }
+# ==========================================
+# STORAGE ACCOUNT & RANDOM SUFFIX
+# ==========================================
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+  numeric = true
+}
 
-# resource "random_string" "suffix" {
-#   length  = 6
-#   special = false
-#   upper   = false
-#   numeric = true
-# }
+module "storage_account" {
+  source = "./modules/storage_account"
 
-# module "synapse_workspace" {
-#   source = "./modules/synapse_workspace"
+  name                = "${var.environment}${var.project_name}sa${random_string.suffix.result}"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.location
+  filesystem_name     = "${var.project_name}-${var.environment}-fs"
+  tags                = var.tags
+}
 
-#   name                                 = "${var.environment}-${var.project_name}-synapse"
-#   resource_group_name                  = data.azurerm_resource_group.main.name
-#   location                             = var.location
-#   storage_data_lake_gen2_filesystem_id = module.storage_account.filesystem_synapse_url
-#   storage_account_id                   = module.storage_account.id
-#   sql_administrator_login              = var.sql_administrator_login
-#   managed_virtual_network_enabled      = var.synapse_managed_vnet_enabled
-#   sql_pool_sku                         = var.synapse_sql_pool_sku
-#   spark_pool_node_count                = var.synapse_spark_pool_node_count
-#   spark_pool_node_size_family          = var.synapse_spark_pool_node_size_family
-#   spark_pool_node_size                 = var.synapse_spark_pool_node_size
-#   spark_pool_version                   = var.synapse_spark_pool_version
-#   spark_pool_auto_pause_enabled        = var.synapse_spark_pool_auto_pause_enabled
-#   spark_pool_auto_scale_enabled        = var.synapse_spark_pool_auto_scale_enabled
-#   spark_pool_min_node_count            = var.synapse_spark_pool_min_node_count
-#   spark_pool_max_node_count            = var.synapse_spark_pool_max_node_count
-#   spark_pool_delay_in_minutes          = var.synapse_spark_pool_delay_in_minutes
-#   firewall_rules                       = var.synapse_firewall_rules
-#   tags                                 = var.tags
-#   sql_admin_password_secret_name       = var.synapse_sql_admin_password_secret_name
-#   key_vault_name                       = var.key_vault_name
-# }
+# ==========================================
+# SYNAPSE WORKSPACE
+# ==========================================
+module "synapse_workspace" {
+  source = "./modules/synapse_workspace"
 
-# Security Hardening Module
+  name                                 = "${var.environment}-${var.project_name}-synapse"
+  resource_group_name                  = data.azurerm_resource_group.main.name
+  location                             = var.location
+  storage_data_lake_gen2_filesystem_id = module.storage_account.filesystem_synapse_url
+  storage_account_id                   = module.storage_account.id
+  sql_administrator_login              = var.sql_administrator_login
+  managed_virtual_network_enabled      = var.synapse_managed_vnet_enabled
+  sql_pool_sku                         = var.synapse_sql_pool_sku
+  spark_pool_node_count                = var.synapse_spark_pool_node_count
+  spark_pool_node_size_family          = var.synapse_spark_pool_node_size_family
+  spark_pool_node_size                 = var.synapse_spark_pool_node_size
+  spark_pool_version                   = var.synapse_spark_pool_version
+  spark_pool_auto_pause_enabled        = var.synapse_spark_pool_auto_pause_enabled
+  spark_pool_auto_scale_enabled        = var.synapse_spark_pool_auto_scale_enabled
+  spark_pool_min_node_count            = var.synapse_spark_pool_min_node_count
+  spark_pool_max_node_count            = var.synapse_spark_pool_max_node_count
+  spark_pool_delay_in_minutes          = var.synapse_spark_pool_delay_in_minutes
+  firewall_rules                       = var.synapse_firewall_rules
+  tags                                 = var.tags
+  sql_admin_password_secret_name       = var.synapse_sql_admin_password_secret_name
+  key_vault_name                       = var.key_vault_name
+}
+
+# ==========================================
+# SECURITY MODULE
+# ==========================================
 module "security" {
   source = "./modules/security"
 
@@ -59,7 +68,32 @@ module "security" {
   rbac_contributors = var.rbac_contributors
 }
 
+# ==========================================
+# STREAM ANALYTICS
+# ==========================================
+module "stream_analytics" {
+  source = "./modules/stream_analytics"
 
+  name                = "${var.environment}-${var.project_name}-stream"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.location
+  streaming_units     = 3
+  
+  transformation_query = <<QUERY
+    SELECT
+        *
+    INTO
+        [output]
+    FROM
+        [input]
+  QUERY
+
+  tags = var.tags
+}
+
+# ==========================================
+# DATABRICKS WORKSPACE
+# ==========================================
 module "databricks_workspace" {
   source = "./modules/databricks_workspace"
 
@@ -82,6 +116,9 @@ module "databricks_workspace" {
   tags                             = var.tags
 }
 
+# ==========================================
+# MONITORING - LOG ANALYTICS
+# ==========================================
 module "log_analytics" {
   source = "./modules/monitoring/log_analytics_workspace"
 
@@ -92,6 +129,9 @@ module "log_analytics" {
   tags                = var.tags
 }
 
+# ==========================================
+# MONITORING - APPLICATION INSIGHTS
+# ==========================================
 module "app_insights" {
   source = "./modules/monitoring/app_insights"
 
@@ -102,12 +142,21 @@ module "app_insights" {
   tags                       = var.tags
 }
 
+# ==========================================
+# LOCAL VARIABLES
+# ==========================================
 locals {
-  # APP SERVICE
-  # will use this in the App Service
+  common_tags = merge(var.tags, {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  })
+  
   ai_connection_string = module.app_insights.app_insights_connection_string
 }
 
+# ==========================================
+# MONITORING - ACTION GROUP
+# ==========================================
 resource "azurerm_monitor_action_group" "global" {
   name                = "${var.prefix}-${var.environment}-ag"
   resource_group_name = var.resource_group_name
@@ -120,10 +169,12 @@ resource "azurerm_monitor_action_group" "global" {
   }
 
   short_name = "alert_email"
-
-  tags = var.tags
+  tags       = var.tags
 }
 
+# ==========================================
+# MONITORING - ALERTS FOR APP SERVICE
+# ==========================================
 module "alerts_app" {
   source = "./modules/monitoring/alerts"
 
@@ -133,12 +184,15 @@ module "alerts_app" {
   location                   = var.location
   subscription_id            = data.azurerm_subscription.current.id
   cost_spike_threshold       = var.alerts_cost_spike_threshold
-  target_resource_id         = module.storage_account.id # REPLACE THIS WITH APP SERVICE ID
+  target_resource_id         = module.storage_account.id
   log_analytics_workspace_id = module.log_analytics.workspace_id
   action_group_id            = azurerm_monitor_action_group.global.id
   tags                       = var.tags
 }
 
+# ==========================================
+# MONITORING - ALERTS FOR FUNCTION APP
+# ==========================================
 module "alerts_func" {
   source = "./modules/monitoring/alerts"
 
@@ -148,12 +202,15 @@ module "alerts_func" {
   location                   = var.location
   subscription_id            = data.azurerm_subscription.current.id
   cost_spike_threshold       = var.alerts_cost_spike_threshold
-  target_resource_id         = module.storage_account.id # REPLACE WITH FUNCTION APP ID
+  target_resource_id         = module.storage_account.id
   log_analytics_workspace_id = module.log_analytics.workspace_id
   action_group_id            = azurerm_monitor_action_group.global.id
   tags                       = var.tags
 }
 
+# ==========================================
+# BUDGET
+# ==========================================
 module "budget" {
   source = "./modules/budget"
 
@@ -166,6 +223,9 @@ module "budget" {
   contact_emails    = var.budget_cost_alert_emails
 }
 
+# ==========================================
+# MONITORING - DASHBOARD
+# ==========================================
 module "dashboard" {
   source = "./modules/monitoring/dashboard"
 
@@ -173,30 +233,90 @@ module "dashboard" {
   environment                = var.environment
   resource_group_name        = var.resource_group_name
   location                   = var.location
-  app_service_id             = module.storage_account.id # REPLACE WITH APP SERVICE ID
-  function_app_id            = module.storage_account.id # REPLACE WITH FUNCTION APP ID
+  app_service_id             = module.storage_account.id
+  function_app_id            = module.storage_account.id
   log_analytics_workspace_id = module.log_analytics.workspace_id
   budget_amount              = var.budget_monthly_amount
   current_spend              = 0
   tags                       = var.tags
 }
 
-# Stream Analytics Module to be used once permissions are made available
-module "stream_analytics" {
-  source = "./modules/stream_analytics"
-  name                = "${var.environment}-${var.project_name}-stream"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.location
-  streaming_units     = 3
+# ==========================================
+# SQL SERVER MODULE
+# ==========================================
+module "sql_server" {
+  source = "./modules/sql_server"
   
-  transformation_query = <<QUERY
-    SELECT
-        *
-    INTO
-        [output]
-    FROM
-        [input]
-  QUERY
-
-  tags = var.tags
+  sql_server_name     = var.sql_server_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  sql_admin_login     = var.sql_admin_login
+  sql_admin_password  = var.sql_admin_password
+  
+  databases = {
+    telemetry = {
+      name                     = "sqldb-${var.environment}-ng-cmu-telemetry"
+      sku_name                 = var.sql_db_telemetry_sku
+      max_size_gb              = var.sql_db_telemetry_max_size_gb
+      backup_retention_days    = var.sql_backup_retention_days
+      backup_interval_hours    = var.sql_backup_interval_hours
+      enable_ltr               = true
+      ltr_weekly_retention     = var.sql_ltr_weekly_retention
+      ltr_monthly_retention    = var.sql_ltr_monthly_retention
+      ltr_yearly_retention     = var.sql_ltr_yearly_retention
+      ltr_week_of_year         = 1
+      geo_backup_enabled       = var.sql_geo_backup_enabled
+      tde_enabled              = true
+      zone_redundant           = var.sql_zone_redundant
+      tags                     = { Database = "Telemetry" }
+    }
+    customer = {
+      name                     = "sqldb-${var.environment}-ng-cmu-customer"
+      sku_name                 = var.sql_db_customer_sku
+      max_size_gb              = var.sql_db_customer_max_size_gb
+      backup_retention_days    = var.sql_backup_retention_days
+      backup_interval_hours    = var.sql_backup_interval_hours
+      enable_ltr               = true
+      ltr_weekly_retention     = var.sql_ltr_weekly_retention
+      ltr_monthly_retention    = var.sql_ltr_monthly_retention
+      ltr_yearly_retention     = var.sql_ltr_yearly_retention
+      ltr_week_of_year         = 1
+      geo_backup_enabled       = var.sql_geo_backup_enabled
+      tde_enabled              = true
+      zone_redundant           = var.sql_zone_redundant
+      tags                     = { Database = "Customer" }
+    }
+    analytics = {
+      name                     = "sqldb-${var.environment}-ng-cmu-analytics"
+      sku_name                 = var.sql_db_analytics_sku
+      max_size_gb              = var.sql_db_analytics_max_size_gb
+      backup_retention_days    = var.sql_backup_retention_days
+      backup_interval_hours    = var.sql_backup_interval_hours
+      enable_ltr               = true
+      ltr_weekly_retention     = var.sql_ltr_weekly_retention
+      ltr_monthly_retention    = var.sql_ltr_monthly_retention
+      ltr_yearly_retention     = var.sql_ltr_yearly_retention
+      ltr_week_of_year         = 1
+      geo_backup_enabled       = var.sql_geo_backup_enabled
+      tde_enabled              = true
+      zone_redundant           = var.sql_zone_redundant
+      tags                     = { Database = "Analytics" }
+    }
+  }
+  
+  firewall_rules = var.sql_firewall_rules
+  
+  enable_auditing            = var.sql_enable_auditing
+  audit_storage_account_name = var.sql_audit_storage_name
+  audit_retention_days       = var.sql_audit_retention_days
+  
+  enable_threat_detection          = var.sql_enable_threat_detection
+  threat_detection_email_addresses = var.sql_threat_detection_emails
+  
+  enable_failover        = var.sql_enable_failover
+  failover_location      = var.sql_failover_location
+  failover_mode          = var.sql_failover_mode
+  failover_grace_minutes = var.sql_failover_grace_minutes
+  
+  tags = local.common_tags
 }
