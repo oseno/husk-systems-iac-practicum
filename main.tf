@@ -59,9 +59,7 @@ module "security" {
   rbac_contributors = var.rbac_contributors
 }
 
-# Stream Analytics Module to be used once permissions are made available
-module "stream_analytics" {
-  source = "./modules/stream_analytics"
+
 module "databricks_workspace" {
   source = "./modules/databricks_workspace"
 
@@ -182,10 +180,10 @@ module "dashboard" {
   current_spend              = 0
   tags                       = var.tags
 }
-# # Stream Analytics Module to be used once permissions are made available
-# module "stream_analytics" {
-#   source = "./modules/stream_analytics"
 
+# Stream Analytics Module to be used once permissions are made available
+module "stream_analytics" {
+  source = "./modules/stream_analytics"
   name                = "${var.environment}-${var.project_name}-stream"
   resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
@@ -202,5 +200,3 @@ module "dashboard" {
 
   tags = var.tags
 }
-#   tags = var.tags
-# }
