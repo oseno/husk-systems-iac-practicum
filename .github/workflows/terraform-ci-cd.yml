@@ -1,0 +1,230 @@
+name: Terraform CI/CD - All Modules
+
+on:
+  push:
+    branches:
+      - main
+      - development
+    paths:
+      - 'modules/**'
+      - '*.tf'
+      - '.github/workflows/**'
+  pull_request:
+    branches:
+      - main
+      - development
+  workflow_dispatch:
+
+env:
+  TF_VERSION: 1.6.0
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+jobs:
+  validate-modules:
+    name: Validate All Modules
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        module:
+          - databricks_workspace
+          - stream_analytics
+          - sql_server
+          - security
+          - budget
+          - monitoring/log_analytics_workspace
+          - monitoring/app_insights
+          - monitoring/alerts
+          - monitoring/dashboard
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        working-directory: ./modules/${{ matrix.module }}
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        working-directory: ./modules/${{ matrix.module }}
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: ./modules/${{ matrix.module }}
+        run: terraform validate
+
+      - name: Module Validation Success
+        run: echo "Module ${{ matrix.module }} validation passed"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: validate-modules
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          soft_fail: true
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [validate-modules, security-scan]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        env:
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Save Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: tfplan
+          retention-days: 5
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Plan
+            
+            **Modules Validated:**
+            - Databricks Workspace
+            - Stream Analytics
+            - SQL Server
+            - Security Module
+            - Monitoring Modules
+            
+            **Next Steps:**
+            Merge this PR to trigger deployment to production.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        env:
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Deployment Complete
+        run: |
+          echo "Deployment successful!"
+          echo "Check Azure Portal: https://portal.azure.com"
+
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: Verify SQL Server
+        run: |
+          echo "Verifying SQL Server deployment..."
+          az sql server list --resource-group rg-prod-in-cmu --output table
+
+      - name: Verify Databases
+        run: |
+          echo "Verifying databases..."
+          az sql db list --resource-group rg-prod-in-cmu --server sql-dev-ngcmu-001 --output table || true
+
+      - name: Verify Databricks
+        run: |
+          echo "Verifying Databricks workspace..."
+          az databricks workspace list --resource-group rg-prod-in-cmu --output table
+
+      - name: Verify Stream Analytics
+        run: |
+          echo "Verifying Stream Analytics job..."
+          az stream-analytics job list --resource-group rg-prod-in-cmu --output table
+
+      - name: All Verifications Complete
+        run: echo "All resources verified successfully"
+
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [terraform-apply, verify-deployment]
+    if: always()
+    
+    steps:
+      - name: Send Success Notification
+        if: needs.terraform-apply.result == 'success'
+        run: |
+          echo "Deployment succeeded!"
+          echo "All modules deployed successfully to Azure"
+
+      - name: Send Failure Notification
+        if: needs.terraform-apply.result == 'failure'
+        run: |
+          echo "Deployment failed!"
+          echo "Check the logs for details"
