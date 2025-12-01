@@ -43,3 +43,14 @@ output "date_lake_filesystem_name" {
   description = "The name of the data lake gen2 filesystem (container)."
   value       = module.storage_account.name
 }
+
+# # Stream Analytics outputs to be used once permissions are made available
+# output "stream_analytics_job_id" {
+#   description = "The ID of the Stream Analytics job"
+#   value       = module.stream_analytics.id
+# }
+
+# output "stream_analytics_job_name" {
+#   description = "The name of the Stream Analytics job"
+#   value       = module.stream_analytics.name
+# }
