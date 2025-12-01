@@ -153,10 +153,6 @@ variable "databricks_cluster_policy_allowed_node_types" {
   ]
 }
 
-variable "databricks_key_vault_secret_scope_name" {
-  description = "The name of the secret scope in Databricks."
-  type        = string
-}
 
 
 variable "databricks_autoscale_policy_enabled_name" {
@@ -208,4 +204,28 @@ variable "databricks_autotermination_minutes_minValue" {
   description = "The minimum number minutes before idle workers are terminated."
   type        = number
   default     = 10
+}
+
+variable "databricks_spark_version" {
+  type = string
+}
+
+variable "prefix" {
+  type = string
+}
+
+variable "alerts_email_address" {
+  type = string
+}
+
+variable "budget_monthly_amount" {
+  type = number
+}
+
+variable "budget_cost_alert_emails" {
+  type = list(string)
+}
+
+variable "alerts_cost_spike_threshold" {
+  type = number
 }

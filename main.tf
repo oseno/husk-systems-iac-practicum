@@ -2,6 +2,7 @@ data "azurerm_resource_group" "main" {
   name = var.resource_group_name
 }
 
+data "azurerm_subscription" "current" {}
 
 module "storage_account" {
   source = "./modules/storage_account"
@@ -54,7 +55,7 @@ module "databricks_workspace" {
   location                         = var.location
   environment                      = var.environment
   allowed_node_types               = var.databricks_cluster_policy_allowed_node_types
-  key_vault_secret_scope_name      = var.databricks_key_vault_secret_scope_name
+  key_vault_secret_scope_name      = "${var.environment}-${var.project_name}-kv-scope"
   key_vault_name                   = var.key_vault_name
   sku_name                         = var.databricks_sku_name
   autoscale_max_max_workers_value  = var.databricks_autoscale_max_max_workers_value
@@ -64,7 +65,107 @@ module "databricks_workspace" {
   autotermination_minutes_minValue = var.databricks_autotermination_minutes_minValue
   autoscale_policy_enabled_name    = var.databricks_autoscale_policy_enabled_name
   autoscale_policy_enabled_value   = var.databricks_autoscale_policy_enabled_value
+  spark_version                    = var.databricks_spark_version
   tags                             = var.tags
+}
+
+module "log_analytics" {
+  source = "./modules/monitoring/log_analytics_workspace"
+
+  workspace_name      = "la-${var.environment}-${var.prefix}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  retention_in_days   = 30
+  tags                = var.tags
+}
+
+module "app_insights" {
+  source = "./modules/monitoring/app_insights"
+
+  ai_name                    = "ai-${var.environment}-${var.prefix}"
+  location                   = var.location
+  resource_group_name        = var.resource_group_name
+  log_analytics_workspace_id = module.log_analytics.workspace_id
+  tags                       = var.tags
+}
+
+locals {
+  # APP SERVICE
+  # will use this in the App Service
+  ai_connection_string = module.app_insights.app_insights_connection_string
+}
+
+resource "azurerm_monitor_action_group" "global" {
+  name                = "${var.prefix}-${var.environment}-ag"
+  resource_group_name = var.resource_group_name
+  location            = "Global"
+
+  email_receiver {
+    name                    = "PrimaryEmail"
+    email_address           = var.alerts_email_address
+    use_common_alert_schema = true
+  }
+
+  short_name = "alert_email"
+
+  tags = var.tags
+}
+
+module "alerts_app" {
+  source = "./modules/monitoring/alerts"
+
+  resource_prefix            = var.prefix
+  environment                = var.environment
+  resource_group_name        = var.resource_group_name
+  location                   = var.location
+  subscription_id            = data.azurerm_subscription.current.id
+  cost_spike_threshold       = var.alerts_cost_spike_threshold
+  target_resource_id         = module.storage_account.id # REPLACE THIS WITH APP SERVICE ID
+  log_analytics_workspace_id = module.log_analytics.workspace_id
+  action_group_id            = azurerm_monitor_action_group.global.id
+  tags                       = var.tags
+}
+
+module "alerts_func" {
+  source = "./modules/monitoring/alerts"
+
+  resource_prefix            = var.prefix
+  environment                = var.environment
+  resource_group_name        = var.resource_group_name
+  location                   = var.location
+  subscription_id            = data.azurerm_subscription.current.id
+  cost_spike_threshold       = var.alerts_cost_spike_threshold
+  target_resource_id         = module.storage_account.id # REPLACE WITH FUNCTION APP ID
+  log_analytics_workspace_id = module.log_analytics.workspace_id
+  action_group_id            = azurerm_monitor_action_group.global.id
+  tags                       = var.tags
+}
+
+module "budget" {
+  source = "./modules/budget"
+
+  prefix            = var.prefix
+  environment       = var.environment
+  resource_group_id = data.azurerm_resource_group.main.id
+  amount            = var.budget_monthly_amount
+  start_date        = "2025-01-01T00:00:00Z"
+  end_date          = "2025-11-11T00:00:00Z"
+  contact_emails    = var.budget_cost_alert_emails
+}
+
+module "dashboard" {
+  source = "./modules/monitoring/dashboard"
+
+  prefix                     = var.prefix
+  environment                = var.environment
+  resource_group_name        = var.resource_group_name
+  location                   = var.location
+  app_service_id             = module.storage_account.id # REPLACE WITH APP SERVICE ID
+  function_app_id            = module.storage_account.id # REPLACE WITH FUNCTION APP ID
+  log_analytics_workspace_id = module.log_analytics.workspace_id
+  budget_amount              = var.budget_monthly_amount
+  current_spend              = 0
+  tags                       = var.tags
 }
 # # Stream Analytics Module to be used once permissions are made available
 # module "stream_analytics" {

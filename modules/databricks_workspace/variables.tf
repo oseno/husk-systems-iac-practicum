@@ -96,3 +96,7 @@ variable "environment" {
   type        = string
   default     = "dev" # shorter version of environment name
 }
+
+variable "spark_version" {
+  type = string
+}
