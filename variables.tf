@@ -4,38 +4,22 @@ variable "location" {
   default     = "southindia"
 }
 
-# Resource Group
 variable "resource_group_name" {
   description = "Name of the existing resource group to deploy resources into"
   type        = string
-  default     = "rg-prod-in-cmu" # cannot hardcode this since you only use it while creating
-  # a test storage account. What if the resource group does not exist?
+  default     = "rg-prod-in-cmu"
 }
 
-# Project/Environment Tags
 variable "environment" {
   description = "Environment name (dev, stg, prod)"
   type        = string
-  default     = "dev" # shorter version of environment name
+  default     = "dev"
 }
 
 variable "project_name" {
   description = "Project name for tagging"
   type        = string
-  default     = "infracore"  # Changed to lowercase
-}
-
-variable "owner" {
-  description = "Owner/team name for tagging"
-  type        = string
-  default     = "InfraCore Team"
-}
-
-# Test Resource Configuration
-variable "test_storage_name_prefix" {
-  description = "Prefix for test storage account name"
-  type        = string
-  default     = "sadevngcmutest"
+  default     = "infracore"
 }
 
 variable "tags" {
@@ -43,206 +27,195 @@ variable "tags" {
   type        = map(string)
   default = {
     "Provisioner" = "OpenTofu"
-    "Environment" = "dev" # default but will be overriden by envs
+    "Environment" = "dev"
   }
 }
 
-variable "sql_administrator_login" {
-  description = "The SQL administrator login for the Synapse workspace."
+# ==========================================
+# SQL Server Module Variables
+# ==========================================
+variable "sql_server_name" {
+  description = "Name of the SQL server"
   type        = string
 }
 
-variable "synapse_managed_vnet_enabled" {
-  description = "Specifies whether a managed virtual network is enabled for the Synapse workspace."
+variable "sql_admin_login" {
+  description = "SQL Server administrator login"
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "SQL Server administrator password"
+  type        = string
+}
+
+variable "sql_db_telemetry_sku" {
+  description = "SKU for Telemetry database"
+  type        = string
+}
+
+variable "sql_db_telemetry_max_size_gb" {
+  description = "Max size in GB for Telemetry database"
+  type        = number
+}
+
+variable "sql_db_customer_sku" {
+  description = "SKU for Customer database"
+  type        = string
+}
+
+variable "sql_db_customer_max_size_gb" {
+  description = "Max size in GB for Customer database"
+  type        = number
+}
+
+variable "sql_db_analytics_sku" {
+  description = "SKU for Analytics database"
+  type        = string
+}
+
+variable "sql_db_analytics_max_size_gb" {
+  description = "Max size in GB for Analytics database"
+  type        = number
+}
+
+variable "sql_backup_retention_days" {
+  description = "Backup retention in days for SQL databases"
+  type        = number
+}
+
+variable "sql_backup_interval_hours" {
+  description = "Backup interval in hours for SQL databases"
+  type        = number
+}
+
+variable "sql_ltr_weekly_retention" {
+  description = "Long-term weekly backup retention in weeks"
+  type        = string
+}
+
+variable "sql_ltr_monthly_retention" {
+  description = "Long-term monthly backup retention in months"
+  type        = string
+}
+
+variable "sql_ltr_yearly_retention" {
+  description = "Long-term yearly backup retention in years"
+  type        = string
+}
+
+variable "sql_geo_backup_enabled" {
+  description = "Enable geo-redundant backups"
   type        = bool
-  default     = true
 }
 
-variable "synapse_sql_pool_sku" {
-  description = "The SKU for Synapse workspace such as 'DW100c'"
-  type        = string
-  default     = "DW100c"
-}
-
-variable "synapse_spark_pool_node_count" {
-  description = "The number of node in the Spark pool if auto-scale is disabled."
-  type        = number
-  default     = 3
-}
-
-variable "synapse_spark_pool_node_size_family" {
-  description = "The node size family for the spark pool such as 'MemoryOptimized', 'None'."
-  type        = string
-  default     = "MemoryOptimized"
-}
-
-variable "synapse_spark_pool_node_size" {
-  description = "The node size for the spark pool such as 'Medium', 'Small'."
-  type        = string
-  default     = "Small"
-}
-
-variable "synapse_spark_pool_version" {
-  description = "The Spark version for the Spark pool such as 3.4"
-  type        = string
-  default     = "3.4"
-}
-
-variable "synapse_spark_pool_auto_pause_enabled" {
-  description = "Specifies whether Spark pool should auto-pause when idle."
+variable "sql_zone_redundant" {
+  description = "Enable zone-redundant configuration"
   type        = bool
-  default     = true
 }
 
-variable "synapse_spark_pool_auto_scale_enabled" {
-  description = "Specifies whether auto-scaling is enabled for the Spark pool. "
-  type        = bool
-  default     = true
-}
-
-variable "synapse_spark_pool_min_node_count" {
-  description = "The minimum number of nodes for the Spark pool if auto-scale is enabled."
-  type        = number
-  default     = 3
-}
-
-variable "synapse_spark_pool_max_node_count" {
-  description = "The maximum number of nodes for the Spark pool if auto-scale is enabled."
-  type        = number
-  default     = 10
-}
-
-variable "synapse_spark_pool_delay_in_minutes" {
-  description = "The number of minutes of idle time before the Spark pool is automatically paused."
-  type        = number
-  default     = 15
-}
-
-variable "synapse_firewall_rules" {
-  description = "A map of firewall rules (name, start_ip, end_ip) for the Synapse workspace."
+variable "sql_firewall_rules" {
+  description = "A map of firewall rules (name, start_ip, end_ip) for the SQL server"
   type = map(object({
     start_ip = string
     end_ip   = string
   }))
-  default = {
-    "AllowAzureServices" = {
-      start_ip = "0.0.0.0"
-      end_ip   = "0.0.0.0"
-    }
-  }
+  default = {}
 }
 
-variable "key_vault_name" {
-  description = "The name of the Azure key vault containing the Synapse credentials."
-  type        = string
-}
-
-variable "synapse_sql_admin_password_secret_name" {
-  description = "The name of the secret in Key vault that stores the SQL admin password."
-  type        = string
-  default     = "synapse-sql-admin-password"
-}
-
-# Security Module Variables
-variable "subscription_id" {
-  description = "Azure subscription ID"
-  type        = string
-}
-
-variable "rbac_readers" {
-  description = "List of principal IDs to assign Reader role"
-  type        = list(string)
-  default     = []
-}
-
-variable "rbac_contributors" {
-  description = "List of principal IDs to assign Contributor role"
-  type        = list(string)
-  default     = []
-}
-variable "databricks_cluster_policy_allowed_node_types" {
-  description = "Allowed VM SKUs for databricks clusters."
-  type        = list(string)
-  default = [
-    "Standard_D4ds_v4",
-    "Standard_D8ds_v4",
-    "Standard_E4ds_v4"
-  ]
-}
-
-
-
-variable "databricks_autoscale_policy_enabled_name" {
-  description = "The name of the autoscale policy in Databricks."
-  type        = string
-}
-
-variable "databricks_sku_name" {
-  description = "The SKUs for the Databricks workspace such as 'Premium '."
-  type        = string
-  default     = "Premium" # for governance features (Audit logs, RBAC)
-}
-
-variable "databricks_autoscale_policy_enabled_value" {
-  description = "Specifies whether auto-scaling is enabled."
+variable "sql_enable_auditing" {
+  description = "Enable auditing on the SQL server"
   type        = bool
-  default     = true
+  default     = false
 }
 
-variable "databricks_autoscale_min_workers_value" {
-  description = "The minimum number of workers for the Databricks clusters if auto-scaling is enabled."
+variable "sql_audit_storage_name" {
+  description = "Storage account name for auditing logs"
+  type        = string
+  default     = ""
+}
+
+variable "sql_audit_retention_days" {
+  description = "Retention in days for audit logs"
   type        = number
-  default     = 1
+  default     = 0
 }
 
-variable "databricks_autoscale_max_min_workers_value" {
-  # Assumes that autoscale for maximum workers is of type "range".
-  description = "The minimum number of maximum workers for the Databricks clusters if auto-scaling is enabled."
-  type        = number
-  default     = 2
+variable "sql_enable_threat_detection" {
+  description = "Enable threat detection on SQL server"
+  type        = bool
+  default     = false
 }
 
-variable "databricks_autoscale_max_max_workers_value" {
-  # Assumes that autoscale for maximum workers is of type "range".
-  description = "The maximum number of maximum workers for the Databricks clusters if auto-scaling is enabled."
-  type        = number
-  default     = 15
+variable "sql_threat_detection_emails" {
+  description = "List of email addresses to notify for threat detection"
+  type        = list(string)
+  default     = []
 }
 
-variable "databricks_autotermination_minutes_maxValue" {
-  # Assumes that autotermination minutes is of type "range".
-  description = "The maximum number minutes before idle workers are terminated."
+variable "sql_enable_failover" {
+  description = "Enable failover for SQL server"
+  type        = bool
+  default     = false
+}
+
+variable "sql_failover_location" {
+  description = "Failover region for SQL server"
+  type        = string
+  default     = ""
+}
+
+variable "sql_failover_mode" {
+  description = "Failover mode: Manual or Automatic"
+  type        = string
+  default     = "Manual"
+}
+
+variable "sql_failover_grace_minutes" {
+  description = "Grace period in minutes for failover"
   type        = number
   default     = 60
 }
 
-variable "databricks_autotermination_minutes_minValue" {
-  # Assumes that autotermination minutes is of type "range".
-  description = "The minimum number minutes before idle workers are terminated."
-  type        = number
-  default     = 10
-}
+# ==========================================
+# Commented out variables (not needed)
+# ==========================================
 
-variable "databricks_spark_version" {
-  type = string
-}
+# Synapse / Spark variables
+# variable "synapse_managed_vnet_enabled" {}
+# variable "synapse_sql_pool_sku" {}
+# variable "synapse_spark_pool_node_count" {}
+# variable "synapse_spark_pool_node_size_family" {}
+# variable "synapse_spark_pool_node_size" {}
+# variable "synapse_spark_pool_version" {}
+# variable "synapse_spark_pool_auto_pause_enabled" {}
+# variable "synapse_spark_pool_auto_scale_enabled" {}
+# variable "synapse_spark_pool_min_node_count" {}
+# variable "synapse_spark_pool_max_node_count" {}
+# variable "synapse_spark_pool_delay_in_minutes" {}
+# variable "key_vault_name" {}
+# variable "synapse_sql_admin_password_secret_name" {}
 
-variable "prefix" {
-  type = string
-}
+# Security / RBAC variables
+# variable "subscription_id" {}
+# variable "rbac_readers" {}
+# variable "rbac_contributors" {}
 
-variable "alerts_email_address" {
-  type = string
-}
+# Databricks variables
+# variable "databricks_cluster_policy_allowed_node_types" {}
+# variable "databricks_autoscale_policy_enabled_name" {}
+# variable "databricks_sku_name" {}
+# variable "databricks_autoscale_policy_enabled_value" {}
+# variable "databricks_autoscale_min_workers_value" {}
+# variable "databricks_autoscale_max_min_workers_value" {}
+# variable "databricks_autoscale_max_max_workers_value" {}
+# variable "databricks_autotermination_minutes_maxValue" {}
+# variable "databricks_autotermination_minutes_minValue" {}
+# variable "databricks_spark_version" {}
 
-variable "budget_monthly_amount" {
-  type = number
-}
-
-variable "budget_cost_alert_emails" {
-  type = list(string)
-}
-
-variable "alerts_cost_spike_threshold" {
-  type = number
-}
+# Monitoring / Alerts / Budgets variables
+# variable "prefix" {}
+# variable "alerts_email_address" {}
+# variable "budget_monthly_amount" {}
+# variable "budget_cost_alert_emails" {}
+# variable "alerts_cost_spike_threshold" {}
