@@ -174,23 +174,3 @@ module "dashboard" {
   current_spend              = 0
   tags                       = var.tags
 }
-# # Stream Analytics Module to be used once permissions are made available
-# module "stream_analytics" {
-#   source = "./modules/stream_analytics"
-
-#   name                = "${var.environment}-${var.project_name}-stream"
-#   resource_group_name = data.azurerm_resource_group.main.name
-#   location            = var.location
-#   streaming_units     = 3
-  
-#   transformation_query = <<QUERY
-#     SELECT
-#         *
-#     INTO
-#         [output]
-#     FROM
-#         [input]
-#   QUERY
-
-#   tags = var.tags
-# }
