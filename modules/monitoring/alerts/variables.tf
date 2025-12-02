@@ -14,6 +14,10 @@ variable "location" {
   type = string
 }
 
+variable "application_insights_id" {
+  type = string
+}
+
 variable "target_resource_id" {
   type = string # will be the app service or function app id
 }
@@ -36,7 +40,7 @@ variable "ai_error_threshold" {
   default = 10
 }
 
-variable "subscription_id" {
+variable "budget_module_output_id" {
   type = string
 }
 

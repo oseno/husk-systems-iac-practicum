@@ -4,6 +4,11 @@ data "azurerm_resource_group" "main" {
 
 data "azurerm_subscription" "current" {}
 
+data "azurerm_linux_web_app" "existing" {
+  name                = "test-webapp-cmu-e337e0e9"
+  resource_group_name = "rg-prod-in-cmu"
+}
+
 module "storage_account" {
   source = "./modules/storage_account"
 
@@ -118,11 +123,12 @@ module "alerts_app" {
   environment                = var.environment
   resource_group_name        = var.resource_group_name
   location                   = var.location
-  subscription_id            = data.azurerm_subscription.current.id
   cost_spike_threshold       = var.alerts_cost_spike_threshold
-  target_resource_id         = module.storage_account.id # REPLACE THIS WITH APP SERVICE ID
-  log_analytics_workspace_id = module.log_analytics.workspace_id
+  target_resource_id         = data.azurerm_linux_web_app.existing.id
+  log_analytics_workspace_id = data.azurerm_linux_web_app.existing.id
   action_group_id            = azurerm_monitor_action_group.global.id
+  budget_module_output_id    = module.budget.budget_module_output_id
+  application_insights_id    = module.app_insights.app_insights_id
   tags                       = var.tags
 }
 
@@ -133,11 +139,12 @@ module "alerts_func" {
   environment                = var.environment
   resource_group_name        = var.resource_group_name
   location                   = var.location
-  subscription_id            = data.azurerm_subscription.current.id
   cost_spike_threshold       = var.alerts_cost_spike_threshold
-  target_resource_id         = module.storage_account.id # REPLACE WITH FUNCTION APP ID
-  log_analytics_workspace_id = module.log_analytics.workspace_id
+  target_resource_id         = data.azurerm_linux_web_app.existing.id # REPLACE WITH FUNCTION APP ID
+  log_analytics_workspace_id = data.azurerm_linux_web_app.existing.id
   action_group_id            = azurerm_monitor_action_group.global.id
+  budget_module_output_id    = module.budget.budget_module_output_id
+  application_insights_id    = module.app_insights.app_insights_id
   tags                       = var.tags
 }
 
@@ -148,8 +155,8 @@ module "budget" {
   environment       = var.environment
   resource_group_id = data.azurerm_resource_group.main.id
   amount            = var.budget_monthly_amount
-  start_date        = "2025-01-01T00:00:00Z"
-  end_date          = "2025-11-11T00:00:00Z"
+  start_date        = "2025-11-01T00:00:00Z"
+  end_date          = "2025-12-30T00:00:00Z"
   contact_emails    = var.budget_cost_alert_emails
 }
 
@@ -160,8 +167,8 @@ module "dashboard" {
   environment                = var.environment
   resource_group_name        = var.resource_group_name
   location                   = var.location
-  app_service_id             = module.storage_account.id # REPLACE WITH APP SERVICE ID
-  function_app_id            = module.storage_account.id # REPLACE WITH FUNCTION APP ID
+  app_service_id             = data.azurerm_linux_web_app.existing.id # REPLACE WITH APP SERVICE ID
+  function_app_id            = data.azurerm_linux_web_app.existing.id # REPLACE WITH FUNCTION APP ID
   log_analytics_workspace_id = module.log_analytics.workspace_id
   budget_amount              = var.budget_monthly_amount
   current_spend              = 0

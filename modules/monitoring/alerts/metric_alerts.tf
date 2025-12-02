@@ -1,13 +1,13 @@
-resource "azurerm_monitor_metric_alert" "cpu_high" {
-  name                = "${var.resource_prefix}-cpu-high-${var.environment}"
+resource "azurerm_monitor_metric_alert" "http_5xx_errors" {
+  name                = "${var.resource_prefix}-5xx-errors-${var.environment}"
   resource_group_name = var.resource_group_name
   scopes              = [var.target_resource_id]
 
 
   criteria {
     metric_namespace = "Microsoft.Web/sites"
-    metric_name      = "CpuPercentage"
-    aggregation      = "Average"
+    metric_name      = "Http5xx" # switched to http 500 error from the app service
+    aggregation      = "Total"   # switched to total to received the total number of errors from the app service
     operator         = "GreaterThan"
     threshold        = var.cpu_threshold_percent
   }
@@ -22,26 +22,4 @@ resource "azurerm_monitor_metric_alert" "cpu_high" {
   }
 
   tags = var.tags
-}
-
-resource "azurerm_monitor_metric_alert" "cost_spike" {
-  name                = "${var.resource_prefix}-cost-spike-${var.environment}"
-  resource_group_name = var.resource_group_name
-  scopes              = [var.subscription_id]
-
-  criteria {
-    metric_namespace = "Microsoft.CostManagement"
-    metric_name      = "ActualCost"
-    aggregation      = "Total"
-    operator         = "GreaterThan"
-    threshold        = var.cost_spike_threshold
-  }
-
-  window_size = "PT1H"
-  frequency   = "PT15M"
-  severity    = 1
-
-  action {
-    action_group_id = var.action_group_id
-  }
 }
