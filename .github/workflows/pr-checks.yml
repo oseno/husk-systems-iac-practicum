@@ -23,7 +23,7 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Check Terraform Formatting
+      - name: Check OpenTofu Formatting
         run: |
           echo "Checking format for all .tf files..."
           tofu fmt -check -recursive
@@ -52,7 +52,7 @@ jobs:
         run: |
           tofu init -backend=false
           tofu validate
-          echo "SQL Server module is valid"
+          echo "✅ SQL Server module is valid"
 
   test-databricks-module:
     name: Test Databricks Module
@@ -72,7 +72,7 @@ jobs:
         run: |
           tofu init -backend=false
           tofu validate
-          echo "Databricks module is valid"
+          echo "✅ Databricks module is valid"
 
   test-stream-analytics-module:
     name: Test Stream Analytics Module
@@ -92,7 +92,7 @@ jobs:
         run: |
           tofu init -backend=false
           tofu validate
-          echo "Stream Analytics module is valid"
+          echo "✅ Stream Analytics module is valid"
 
   test-security-module:
     name: Test Security Module
@@ -112,7 +112,87 @@ jobs:
         run: |
           tofu init -backend=false
           tofu validate
-          echo "Security module is valid"
+          echo "✅ Security module is valid"
+
+  test-synapse-module:
+    name: Test Synapse Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Test Synapse Module
+        working-directory: ./modules/synapse_workspace
+        run: |
+          tofu init -backend=false
+          tofu validate
+          echo "✅ Synapse module is valid"
+
+  test-storage-module:
+    name: Test Storage Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Test Storage Module
+        working-directory: ./modules/storage_account
+        run: |
+          tofu init -backend=false
+          tofu validate
+          echo "✅ Storage module is valid"
+
+  test-app-service-module:
+    name: Test App Service Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Test App Service Module
+        working-directory: ./modules/app_service
+        run: |
+          tofu init -backend=false
+          tofu validate
+          echo "✅ App Service module is valid"
+
+  test-function-app-module:
+    name: Test Function App Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Test Function App Module
+        working-directory: ./modules/function_app
+        run: |
+          tofu init -backend=false
+          tofu validate
+          echo "✅ Function App module is valid"
 
   security-check:
     name: Security Scan
@@ -122,38 +202,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run Checkov Security Scan
-        uses: bridgecrewio/checkov-action@master
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          directory: .
-          framework: terraform
           soft_fail: true
-          quiet: true
-          output_format: cli
-          skip_check: CKV_AZURE_225,CKV_AZURE_212,CKV_AZURE_211,CKV_AZURE_18,CKV_AZURE_88,CKV_AZURE_63,CKV_AZURE_66,CKV_AZURE_13,CKV_AZURE_65,CKV_AZURE_213
-
-  pr-summary:
-    name: PR Summary
-    runs-on: ubuntu-latest
-    needs: 
-      - quick-checks
-      - test-sql-module
-      - test-databricks-module
-      - test-stream-analytics-module
-      - test-security-module
-      - security-check
-    if: always()
-    
-    steps:
-      - name: Print PR Summary
-        run: |
-          echo "==================================="
-          echo "Pull Request Validation Summary"
-          echo "==================================="
-          echo "SQL Server Module: ${{ needs.test-sql-module.result }}"
-          echo "Databricks Module: ${{ needs.test-databricks-module.result }}"
-          echo "Stream Analytics Module: ${{ needs.test-stream-analytics-module.result }}"
-          echo "Security Module: ${{ needs.test-security-module.result }}"
-          echo "Format & Validation: ${{ needs.quick-checks.result }}"
-          echo "Security Scan: ${{ needs.security-check.result }}"
-          echo "==================================="
