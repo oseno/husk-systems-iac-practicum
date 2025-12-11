@@ -1,4 +1,4 @@
-name: Terraform CI/CD - All Modules
+name: OpenTofu CI/CD - All Modules
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
     paths:
       - 'modules/**'
       - '*.tf'
+      - 'backend.conf'
       - '.github/workflows/**'
   pull_request:
     branches:
@@ -21,6 +22,9 @@ env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  ARM_STORAGE_ACCOUNT_NAME: saprodngcmustate
+  ARM_CONTAINER_NAME: opentofu-state
+  ARM_RESOURCE_GROUP_NAME: rg-prod-ng-cmu
 
 jobs:
   validate-modules:
@@ -28,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     
     strategy:
-      fail-fast: false
       matrix:
         module:
           - databricks_workspace
@@ -36,6 +39,11 @@ jobs:
           - sql_server
           - security
           - budget
+          - synapse_workspace
+          - storage_account
+          - app_service
+          - function_app
+          - resource_group
     
     steps:
       - name: Checkout Code
@@ -46,21 +54,69 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Format Check
+      - name: OpenTofu Format Check
         working-directory: ./modules/${{ matrix.module }}
         run: tofu fmt -check -recursive
         continue-on-error: true
 
-      - name: Terraform Init
+      - name: OpenTofu Init (No Backend)
         working-directory: ./modules/${{ matrix.module }}
         run: tofu init -backend=false
 
-      - name: Terraform Validate
+      - name: OpenTofu Validate
         working-directory: ./modules/${{ matrix.module }}
         run: tofu validate
 
       - name: Module Validation Success
-        run: echo "Module ${{ matrix.module }} validation passed"
+        run: echo "✅ Module ${{ matrix.module }} validation passed"
+
+  validate-monitoring-submodules:
+    name: Validate Monitoring Submodules
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        submodule:
+          - log_analytics_workspace
+          - app_insights
+          - alerts
+          - dashboard
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Check if submodule exists
+        id: check
+        run: |
+          if [ -d "./modules/monitoring/${{ matrix.submodule }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: OpenTofu Init (No Backend)
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ./modules/monitoring/${{ matrix.submodule }}
+        run: tofu init -backend=false
+
+      - name: OpenTofu Validate
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ./modules/monitoring/${{ matrix.submodule }}
+        run: tofu validate
+
+      - name: Submodule Validation Success
+        if: steps.check.outputs.exists == 'true'
+        run: echo "✅ Monitoring submodule ${{ matrix.submodule }} validation passed"
+
+      - name: Submodule Not Found
+        if: steps.check.outputs.exists == 'false'
+        run: echo "⚠️ Monitoring submodule ${{ matrix.submodule }} not found, skipping"
 
   security-scan:
     name: Security Scan
@@ -82,14 +138,14 @@ jobs:
           directory: .
           framework: terraform
           soft_fail: true
-          quiet: true
           output_format: cli
-          skip_check: CKV_AZURE_225,CKV_AZURE_212,CKV_AZURE_211,CKV_AZURE_18,CKV_AZURE_88,CKV_AZURE_63,CKV_AZURE_66,CKV_AZURE_13,CKV_AZURE_65,CKV_AZURE_213
 
-  terraform-plan:
-    name: Terraform Plan
+  # Only run plan/apply for push events, not PRs
+  opentofu-plan:
+    name: OpenTofu Plan
     runs-on: ubuntu-latest
     needs: [validate-modules, security-scan]
+    if: github.event_name != 'pull_request'
     
     steps:
       - name: Checkout Code
@@ -100,10 +156,35 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Init
-        run: tofu init
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
-      - name: Terraform Plan
+      - name: Get Backend Access Key
+        id: backend
+        run: |
+          KEY=$(az storage account keys list \
+            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
+            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
+            --query '[0].value' -o tsv)
+          echo "::add-mask::$KEY"
+          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
+
+      - name: Set State Key Based on Branch
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ARM_KEY=prod/terraform.tfstate" >> $GITHUB_ENV
+            echo "📦 Using production state"
+          else
+            echo "ARM_KEY=dev/terraform.tfstate" >> $GITHUB_ENV
+            echo "📦 Using development state"
+          fi
+
+      - name: OpenTofu Init
+        run: tofu init -backend-config=backend.conf
+
+      - name: OpenTofu Plan
         run: tofu plan -out=tfplan
         env:
           TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
@@ -111,38 +192,66 @@ jobs:
       - name: Save Plan
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-plan
+          name: opentofu-plan
           path: tfplan
           retention-days: 5
 
-      - name: Comment Plan on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const output = `#### Terraform Plan
-            
-            **Modules Validated:**
-            - Databricks Workspace
-            - Stream Analytics
-            - SQL Server
-            - Security Module
-            
-            **Next Steps:**
-            Merge this PR to trigger deployment to production.
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
-
-  terraform-apply:
-    name: Terraform Apply
+  opentofu-apply-dev:
+    name: Deploy to Development
     runs-on: ubuntu-latest
-    needs: terraform-plan
+    needs: opentofu-plan
+    if: github.ref == 'refs/heads/development' && github.event_name == 'push'
+    environment: development
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: Get Backend Access Key
+        run: |
+          KEY=$(az storage account keys list \
+            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
+            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
+            --query '[0].value' -o tsv)
+          echo "::add-mask::$KEY"
+          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
+
+      - name: Set Development State Key
+        run: echo "ARM_KEY=dev/terraform.tfstate" >> $GITHUB_ENV
+
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: opentofu-plan
+
+      - name: OpenTofu Init
+        run: tofu init -backend-config=backend.conf
+
+      - name: OpenTofu Apply
+        run: tofu apply -auto-approve tfplan
+        env:
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Deployment Complete
+        run: |
+          echo "✅ Development deployment successful!"
+          echo "🎯 Namespace: dev/terraform.tfstate"
+          echo "👤 Triggered by: ${{ github.actor }}"
+
+  opentofu-apply-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: opentofu-plan
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     
@@ -155,28 +264,46 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: Get Backend Access Key
+        run: |
+          KEY=$(az storage account keys list \
+            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
+            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
+            --query '[0].value' -o tsv)
+          echo "::add-mask::$KEY"
+          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
+
+      - name: Set Production State Key
+        run: echo "ARM_KEY=prod/terraform.tfstate" >> $GITHUB_ENV
+
       - name: Download Plan
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan
+          name: opentofu-plan
 
-      - name: Terraform Init
-        run: tofu init
+      - name: OpenTofu Init
+        run: tofu init -backend-config=backend.conf
 
-      - name: Terraform Apply
+      - name: OpenTofu Apply
         run: tofu apply -auto-approve tfplan
         env:
           TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
 
       - name: Deployment Complete
         run: |
-          echo "Deployment successful!"
-          echo "Check Azure Portal: https://portal.azure.com"
+          echo "🎉 Production deployment successful!"
+          echo "🎯 Namespace: prod/terraform.tfstate"
+          echo "👤 Triggered by: ${{ github.actor }}"
 
   verify-deployment:
     name: Verify Deployment
     runs-on: ubuntu-latest
-    needs: terraform-apply
+    needs: [opentofu-apply-prod]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
@@ -187,42 +314,73 @@ jobs:
 
       - name: Verify SQL Server
         run: |
-          echo "Verifying SQL Server deployment..."
-          az sql server list --resource-group rg-prod-in-cmu --output table || true
-
-      - name: Verify Databases
-        run: |
-          echo "Verifying databases..."
-          az sql db list --resource-group rg-prod-in-cmu --server sql-dev-ngcmu-001 --output table || true
+          echo "🔍 Verifying SQL Server deployment..."
+          az sql server list --resource-group rg-prod-ng-cmu --output table || echo "⚠️ No SQL servers found"
 
       - name: Verify Databricks
         run: |
-          echo "Verifying Databricks workspace..."
-          az databricks workspace list --resource-group rg-prod-in-cmu --output table || true
+          echo "🔍 Verifying Databricks workspace..."
+          az databricks workspace list --resource-group rg-prod-ng-cmu --output table || echo "⚠️ No Databricks workspaces found"
 
       - name: Verify Stream Analytics
         run: |
-          echo "Verifying Stream Analytics job..."
-          az stream-analytics job list --resource-group rg-prod-in-cmu --output table || true
+          echo "🔍 Verifying Stream Analytics job..."
+          az stream-analytics job list --resource-group rg-prod-ng-cmu --output table || echo "⚠️ No Stream Analytics jobs found"
+
+      - name: Verify Synapse
+        run: |
+          echo "🔍 Verifying Synapse workspace..."
+          az synapse workspace list --resource-group rg-prod-ng-cmu --output table || echo "⚠️ No Synapse workspaces found"
+
+      - name: Verify Storage Accounts
+        run: |
+          echo "🔍 Verifying Storage accounts..."
+          az storage account list --resource-group rg-prod-ng-cmu --output table
 
       - name: All Verifications Complete
-        run: echo "All resources verified successfully"
+        run: echo "✅ All resource verifications complete"
 
-  notify:
-    name: Send Notification
+  notify-dev:
+    name: Send Dev Notification
     runs-on: ubuntu-latest
-    needs: [terraform-apply, verify-deployment]
-    if: always()
+    needs: [opentofu-apply-dev]
+    if: always() && (github.ref == 'refs/heads/development' && github.event_name == 'push')
     
     steps:
       - name: Send Success Notification
-        if: needs.terraform-apply.result == 'success'
+        if: needs.opentofu-apply-dev.result == 'success'
         run: |
-          echo "Deployment succeeded!"
-          echo "All modules deployed successfully to Azure"
+          echo "🎉 Development deployment succeeded!"
+          echo "📦 All modules deployed to dev namespace"
+          echo "🌿 Branch: development"
+          echo "👤 Triggered by: ${{ github.actor }}"
 
       - name: Send Failure Notification
-        if: needs.terraform-apply.result == 'failure'
+        if: needs.opentofu-apply-dev.result == 'failure'
         run: |
-          echo "Deployment failed!"
-          echo "Check the logs for details"
+          echo "❌ Development deployment failed!"
+          echo "📋 Check the logs for details"
+          echo "👤 Triggered by: ${{ github.actor }}"
+
+  notify-prod:
+    name: Send Prod Notification
+    runs-on: ubuntu-latest
+    needs: [opentofu-apply-prod, verify-deployment]
+    if: always() && (github.ref == 'refs/heads/main' && github.event_name == 'push')
+    
+    steps:
+      - name: Send Success Notification
+        if: needs.opentofu-apply-prod.result == 'success'
+        run: |
+          echo "🎉 Production deployment succeeded!"
+          echo "📦 All modules deployed to production"
+          echo "🌳 Branch: main"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "✅ Verification complete"
+
+      - name: Send Failure Notification
+        if: needs.opentofu-apply-prod.result == 'failure'
+        run: |
+          echo "❌ Production deployment failed!"
+          echo "📋 Check the logs for details"
+          echo "👤 Triggered by: ${{ github.actor }}"
