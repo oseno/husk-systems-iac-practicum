@@ -161,16 +161,6 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
-      - name: Get Backend Access Key
-        id: backend
-        run: |
-          KEY=$(az storage account keys list \
-            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
-            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
-            --query '[0].value' -o tsv)
-          echo "::add-mask::$KEY"
-          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
-
       - name: Set State Key Based on Branch
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -217,15 +207,6 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
-      - name: Get Backend Access Key
-        run: |
-          KEY=$(az storage account keys list \
-            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
-            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
-            --query '[0].value' -o tsv)
-          echo "::add-mask::$KEY"
-          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
-
       - name: Set Development State Key
         run: echo "ARM_KEY=dev/terraform.tfstate" >> $GITHUB_ENV
 
@@ -268,15 +249,6 @@ jobs:
         uses: azure/login@v1
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
-
-      - name: Get Backend Access Key
-        run: |
-          KEY=$(az storage account keys list \
-            --resource-group ${{ env.ARM_RESOURCE_GROUP_NAME }} \
-            --account-name ${{ env.ARM_STORAGE_ACCOUNT_NAME }} \
-            --query '[0].value' -o tsv)
-          echo "::add-mask::$KEY"
-          echo "ARM_ACCESS_KEY=$KEY" >> $GITHUB_ENV
 
       - name: Set Production State Key
         run: echo "ARM_KEY=prod/terraform.tfstate" >> $GITHUB_ENV
