@@ -23,16 +23,30 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
       - name: Check OpenTofu Formatting
         run: |
           echo "Checking format for all .tf files..."
           tofu fmt -check -recursive
         continue-on-error: true
 
-      - name: Validate Root Configuration
+      - name: Validate Root Configuration with Retry
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
 
   test-sql-module:
     name: Test SQL Server Module
@@ -47,11 +61,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test SQL Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test SQL Module with Retry
         working-directory: ./modules/sql_server
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ SQL Server module is valid"
 
   test-databricks-module:
@@ -67,11 +95,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Databricks Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Databricks Module with Retry
         working-directory: ./modules/databricks_workspace
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Databricks module is valid"
 
   test-stream-analytics-module:
@@ -87,11 +129,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Stream Analytics Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Stream Analytics Module with Retry
         working-directory: ./modules/stream_analytics
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Stream Analytics module is valid"
 
   test-security-module:
@@ -107,11 +163,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Security Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Security Module with Retry
         working-directory: ./modules/security
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Security module is valid"
 
   test-synapse-module:
@@ -127,11 +197,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Synapse Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Synapse Module with Retry
         working-directory: ./modules/synapse_workspace
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Synapse module is valid"
 
   test-storage-module:
@@ -147,11 +231,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Storage Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Storage Module with Retry
         working-directory: ./modules/storage_account
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Storage module is valid"
 
   test-app-service-module:
@@ -167,11 +265,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test App Service Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test App Service Module with Retry
         working-directory: ./modules/app_service
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ App Service module is valid"
 
   test-function-app-module:
@@ -187,11 +299,25 @@ jobs:
         with:
           tofu_version: ${{ env.TF_VERSION }}
 
-      - name: Test Function App Module
+      - name: Cache OpenTofu Providers
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-tofu-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tofu-
+
+      - name: Test Function App Module with Retry
         working-directory: ./modules/function_app
         run: |
-          tofu init -backend=false
-          tofu validate
+          for i in {1..3}; do
+            tofu init -backend=false && tofu validate && break || {
+              echo "Attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
           echo "✅ Function App module is valid"
 
   security-check:
