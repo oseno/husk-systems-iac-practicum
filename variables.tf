@@ -647,3 +647,9 @@ variable "synapse_sql_admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "ARM_STORAGE_ACCOUNT_KEY" {
+  type        = string
+  description = "Storage account key for backend"
+  sensitive   = true
+}
