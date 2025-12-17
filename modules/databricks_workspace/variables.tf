@@ -47,7 +47,7 @@ variable "autoscale_policy_enabled_name" {
 variable "sku_name" {
   description = "The SKUs for the Databricks workspace such as 'Premium '."
   type        = string
-  default     = "Premium" # for governance features (Audit logs, RBAC)
+  default     = "premium" # for governance features (Audit logs, RBAC)
 }
 
 variable "autoscale_policy_enabled_value" {

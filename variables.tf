@@ -85,7 +85,7 @@ variable "synapse_spark_pool_node_size" {
 variable "synapse_spark_pool_version" {
   description = "The Spark version for the Spark pool such as 3.4"
   type        = string
-  default     = "3.4"
+  default     = "3.3"
 }
 
 variable "synapse_spark_pool_auto_pause_enabled" {
@@ -180,7 +180,7 @@ variable "databricks_autoscale_policy_enabled_name" {
 variable "databricks_sku_name" {
   description = "The SKUs for the Databricks workspace such as 'Premium '."
   type        = string
-  default     = "Premium" # for governance features (Audit logs, RBAC)
+  default     = "premium" # for governance features (Audit logs, RBAC)
 }
 
 variable "databricks_autoscale_policy_enabled_value" {
@@ -645,5 +645,11 @@ variable "synapse_sql_admin_login" {
 variable "synapse_sql_admin_password" {
   description = "Synapse SQL admin password"
   type        = string
+  sensitive   = true
+}
+
+variable "ARM_STORAGE_ACCOUNT_KEY" {
+  type        = string
+  description = "Storage account key for backend"
   sensitive   = true
 }
