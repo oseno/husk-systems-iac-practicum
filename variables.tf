@@ -417,3 +417,233 @@ variable "sql_failover_grace_minutes" {
   type        = number
   default     = 60
 }
+
+
+# ==========================================
+# STREAM ANALYTICS CONFIGURATION
+# Add these to the END of your variables.tf file
+# ==========================================
+
+variable "input_type" {
+  description = "Input type for Stream Analytics"
+  type        = string
+  default     = "eventhub"
+}
+
+variable "eventhub_namespace_name" {
+  description = "Event Hub namespace name"
+  type        = string
+}
+
+variable "eventhub_name" {
+  description = "Event Hub name"
+  type        = string
+}
+
+variable "eventhub_partition_count" {
+  description = "Event Hub partition count"
+  type        = number
+  default     = 4
+}
+
+variable "eventhub_message_retention" {
+  description = "Event Hub message retention in days"
+  type        = number
+  default     = 1
+}
+
+variable "input_consumer_group" {
+  description = "Input consumer group"
+  type        = string
+  default     = "$Default"
+}
+
+variable "input_serialization_type" {
+  description = "Input serialization type"
+  type        = string
+  default     = "Json"
+}
+
+variable "input_serialization_encoding" {
+  description = "Input serialization encoding"
+  type        = string
+  default     = "UTF8"
+}
+
+variable "output_type" {
+  description = "Output type for Stream Analytics"
+  type        = string
+  default     = "blob"
+}
+
+variable "output_blob_container" {
+  description = "Output blob container name"
+  type        = string
+}
+
+variable "output_blob_path_pattern" {
+  description = "Output blob path pattern"
+  type        = string
+}
+
+variable "output_blob_date_format" {
+  description = "Output blob date format"
+  type        = string
+  default     = "yyyy-MM-dd"
+}
+
+variable "output_blob_time_format" {
+  description = "Output blob time format"
+  type        = string
+  default     = "HH"
+}
+
+variable "output_serialization_type" {
+  description = "Output serialization type"
+  type        = string
+  default     = "Json"
+}
+
+variable "output_serialization_format" {
+  description = "Output serialization format"
+  type        = string
+  default     = "LineSeparated"
+}
+
+variable "output_batch_size" {
+  description = "Output batch size"
+  type        = number
+  default     = 100
+}
+
+variable "transformation_window_type" {
+  description = "Transformation window type"
+  type        = string
+  default     = "tumbling"
+}
+
+variable "transformation_window_duration" {
+  description = "Transformation window duration"
+  type        = string
+  default     = "5 minute"
+}
+
+variable "transformation_hop_size" {
+  description = "Transformation hop size"
+  type        = string
+  default     = "1 minute"
+}
+
+variable "transformation_aggregate_functions" {
+  description = "Transformation aggregate functions"
+  type        = list(string)
+  default     = ["AVG", "MAX", "MIN", "COUNT"]
+}
+
+variable "transformation_filter_condition" {
+  description = "Transformation filter condition"
+  type        = string
+  default     = ""
+}
+
+variable "transformation_group_by_fields" {
+  description = "Transformation group by fields"
+  type        = list(string)
+  default     = ["DeviceId"]
+}
+
+variable "transformation_partition_by" {
+  description = "Transformation partition by"
+  type        = string
+  default     = "DeviceId"
+}
+
+variable "transformation_out_of_order_tolerance" {
+  description = "Transformation out of order tolerance"
+  type        = number
+  default     = 5
+}
+
+variable "transformation_late_arrival_tolerance" {
+  description = "Transformation late arrival tolerance"
+  type        = number
+  default     = 5
+}
+
+variable "transformation_output_error_policy" {
+  description = "Transformation output error policy"
+  type        = string
+  default     = "Drop"
+}
+
+variable "stream_analytics_job_name" {
+  description = "Stream Analytics job name"
+  type        = string
+}
+
+variable "streaming_units" {
+  description = "Streaming units"
+  type        = number
+  default     = 3
+}
+
+variable "compatibility_level" {
+  description = "Compatibility level"
+  type        = string
+  default     = "1.2"
+}
+
+variable "auto_start_stream_job" {
+  description = "Auto start stream job"
+  type        = bool
+  default     = false
+}
+
+variable "job_start_mode" {
+  description = "Job start mode"
+  type        = string
+  default     = "JobStartTime"
+}
+
+variable "enable_diagnostics" {
+  description = "Enable diagnostics"
+  type        = bool
+  default     = true
+}
+
+variable "log_retention_days" {
+  description = "Log retention days"
+  type        = number
+  default     = 30
+}
+
+variable "enable_metric_alerts" {
+  description = "Enable metric alerts"
+  type        = bool
+  default     = true
+}
+
+variable "error_alert_threshold" {
+  description = "Error alert threshold"
+  type        = number
+  default     = 0
+}
+
+variable "alert_severity" {
+  description = "Alert severity"
+  type        = number
+  default     = 1
+}
+
+# Synapse variables (you have sql_administrator_login but might need password)
+variable "synapse_sql_admin_login" {
+  description = "Synapse SQL admin login"
+  type        = string
+  default     = "sqladmin"
+}
+
+variable "synapse_sql_admin_password" {
+  description = "Synapse SQL admin password"
+  type        = string
+  sensitive   = true
+}
