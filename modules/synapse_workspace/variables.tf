@@ -56,7 +56,7 @@ variable "spark_pool_node_size" {
 variable "spark_pool_version" {
   description = "The Spark version for the Spark pool such as 3.4"
   type        = string
-  default     = "3.4"
+  default     = "3.3"
 }
 
 variable "spark_pool_auto_pause_enabled" {
